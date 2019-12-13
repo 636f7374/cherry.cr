@@ -76,6 +76,7 @@
 ## Tips
 
 * This project is currently in WIP (Work In Progress), it may have some undiscovered problems.
+* Being separated from [Stdlib.cr](https://github.com/636f7374/stdlib.cr), fixing these problems may take 3-7 days.
 * This repository contains OpenSSL and Network components.
   * Crystal network components are highly integrated with OpenSSL.
 * Why use `Super_*`?
