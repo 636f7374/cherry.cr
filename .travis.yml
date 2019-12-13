@@ -1,0 +1,18 @@
+language: generic
+services:
+- docker
+matrix:
+  include:
+  - os: linux
+    dist: trusty
+  - os: osx
+    env:
+    - LDFLAGS=-L/usr/local/opt/openssl/lib
+    - CPPFLAGS=-I/usr/local/opt/openssl/include
+    - PKG_CONFIG_PATH=/usr/local/opt/openssl/lib/pkgconfig
+    - PATH=/usr/local/opt/openssl/bin:$PATH
+install:
+- chmod +x bin/ci
+- bin/ci prepare_build
+script:
+- bin/ci build
