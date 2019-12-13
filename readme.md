@@ -81,6 +81,7 @@
   * Crystal network components are highly integrated with OpenSSL.
 * Why use `Super_*`?
   * By using `Super_ *`, you can reduce memory usage, without the problem of memory leaks.
+* `Travis-CI` appears to be malfunctioning and this repository cannot be detected.
 
 ## Next
 
