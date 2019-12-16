@@ -1,6 +1,10 @@
 name: cherry
 version: 0.1.0
 
+dependencies:
+  papaya:
+    github: 636f7374/papaya.cr
+
 authors:
   - 636f7374
 

@@ -1,1 +1,2 @@
+require "papaya"
 require "./cherry/*"
