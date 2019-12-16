@@ -53,36 +53,30 @@ class HTTP::Client
   {% end %}
 
   def close
-    @socket.try do |_socket|
-      _socket.close ensure original_socket.try &.close
-      all_free ensure super_context_free
-    end
+    return unless _socket = @socket
+
+    _socket.close ensure original_socket.try &.close
+    all_free ensure super_context_free
 
     @socket = nil
   end
 
   def super_context_freed?
-    @tls.try do |_tls|
-      if _tls.is_a? OpenSSL::SSL::SuperContext::Client
-        _tls.freed?
-      end
-    end
+    return unless _tls = @tls
+
+    _tls.freed? if _tls.is_a? OpenSSL::SSL::SuperContext::Client
   end
 
   def super_context_free
-    @tls.try do |_tls|
-      if _tls.is_a? OpenSSL::SSL::SuperContext::Client
-        _tls.free
-      end
-    end
+    return unless _tls = @tls
+
+    _tls.free if _tls.is_a? OpenSSL::SSL::SuperContext::Client
   end
 
   def all_free
-    @socket.try do |_socket|
-      if _socket.is_a? OpenSSL::SSL::SuperSocket::Client
-        _socket.all_free
-      end
-    end
+    return unless _socket = @socket
+
+    _socket.all_free if _socket.is_a? OpenSSL::SSL::SuperSocket::Client
   end
 
   private def original_socket=(value : TCPSocket)
@@ -95,6 +89,7 @@ class HTTP::Client
 
   def io_socket
     return if super_context_freed?
+
     socket
   end
 
@@ -102,7 +97,7 @@ class HTTP::Client
     socket = @socket
     return socket if socket
 
-    hostname = @host.starts_with?('[') && @host.ends_with?(']') ? @host[1..-2] : @host
+    hostname = @host.starts_with?('[') && @host.ends_with?(']') ? @host[1_i32..-2_i32] : @host
     begin
       socket = TCPSocket.new hostname, @port, @dns_timeout, @connect_timeout
       socket.read_timeout = @read_timeout if @read_timeout
@@ -110,13 +105,14 @@ class HTTP::Client
       self.original_socket = socket
 
       {% unless flag?(:without_openssl) %}
-        @tls.try do |_tls|
-          if _tls.is_a? OpenSSL::SSL::SuperContext
-            socket = OpenSSL::SSL::SuperSocket::Client.new socket, context: _tls, hostname: @host, sync_context_free: false
-            socket.skip_free = true if socket.responds_to? :skip_free=
-          elsif _tls.is_a? OpenSSL::SSL::Context
-            socket = OpenSSL::SSL::Socket::Client.new socket, context: _tls, sync_close: true, hostname: @host
-          end
+        case _tls = tls
+        when OpenSSL::SSL::SuperContext::Client
+          socket = OpenSSL::SSL::SuperSocket::Client.new socket, context: _tls, hostname: @host, sync_context_free: false
+          socket.skip_free = true if socket.responds_to? :skip_free=
+        when OpenSSL::SSL::Context::Client
+          socket = OpenSSL::SSL::Socket::Client.new socket, context: _tls, sync_close: true, hostname: @host
+        else
+          raise "Unsupported SSL Context"
         end
       {% end %}
       @socket = socket
