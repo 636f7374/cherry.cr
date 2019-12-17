@@ -105,7 +105,9 @@ class HTTP::Server
     while socket = server.accept?
       socket.try do |client|
         _client = client
-        spawn handle_client server, _client
+        spawn same_thread: true do
+          handle_client server, _client
+        end
       end
     end
   end
@@ -129,7 +131,7 @@ class HTTP::Server
     done = Channel(Nil).new
 
     @sockets.each do |socket|
-      spawn do
+      spawn same_thread: true do
         until closed?
           accept socket
         end

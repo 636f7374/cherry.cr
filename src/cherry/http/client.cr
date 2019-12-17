@@ -27,7 +27,7 @@ class HTTP::Client
                nil
              end
 
-      @port = (port || (@tls ? 443 : 80)).to_i
+      @port = (port || (@tls ? 443_i32 : 80_i32)).to_i
       @compress = true
     end
   {% end %}
@@ -37,11 +37,11 @@ class HTTP::Client
       scheme = uri.scheme
       case {scheme, context}
       when {nil, _}
-        raise ArgumentError.new("Missing scheme: #{uri}")
+        raise ArgumentError.new "Missing scheme: #{uri}"
       when {"http", nil}
         false
       when {"http", OpenSSL::SSL::SuperContext::Client}
-        raise ArgumentError.new("TLS context given for HTTP URI")
+        raise ArgumentError.new "TLS context given for HTTP URI"
       when {"https", nil}
         true
       when {"https", OpenSSL::SSL::SuperContext::Client}
@@ -93,6 +93,10 @@ class HTTP::Client
     socket
   end
 
+  def tls_context
+    tls rescue nil
+  end
+
   private def socket
     socket = @socket
     return socket if socket
@@ -105,16 +109,15 @@ class HTTP::Client
       self.original_socket = socket
 
       {% unless flag?(:without_openssl) %}
-        case _tls = tls
+        case _tls = tls_context
         when OpenSSL::SSL::SuperContext::Client
           socket = OpenSSL::SSL::SuperSocket::Client.new socket, context: _tls, hostname: @host, sync_context_free: false
           socket.skip_free = true if socket.responds_to? :skip_free=
         when OpenSSL::SSL::Context::Client
           socket = OpenSSL::SSL::Socket::Client.new socket, context: _tls, sync_close: true, hostname: @host
-        else
-          raise "Unsupported SSL Context"
         end
       {% end %}
+
       @socket = socket
     rescue ex
       @socket.try &.close ensure original_socket.try &.close
