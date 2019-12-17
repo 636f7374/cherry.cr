@@ -39,11 +39,7 @@ class OpenSSL::SSL::SuperServer
   #
   # This method calls `@wrapped.accept` and wraps the resulting IO in a SSL socket (`OpenSSL::SSL::Socket::Server`) with `context` configuration.
   def accept : OpenSSL::SSL::SuperSocket::Server
-    begin
-      OpenSSL::SSL::SuperSocket::Server.new @wrapped.accept, @context, sync_context_free: false
-    rescue ex
-      socket.close ensure raise ex
-    end
+    OpenSSL::SSL::SuperSocket::Server.new @wrapped.accept, @context, sync_context_free: false
   end
 
   # Implements `::Socket::Server#accept?`.
