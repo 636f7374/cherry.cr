@@ -143,9 +143,6 @@ class HTTP::Server
     @sockets.size.times { done.receive }
   end
 
-  private def handle_exception(ex : Exception)
-  end
-
   private def handle_client(server, client : IO)
     set_socket_timeout server, client
 
@@ -157,20 +154,28 @@ class HTTP::Server
       client.skip_free = true
     end
 
+    exception = nil
+
     begin
       @processor.process client, client
     rescue ex : IO::Error
       # Some Connect Failed, Ignore
+      exception = ex
     rescue ex : Errno
       # Some Connect Failed, Ignore
+      exception = ex
     rescue ex : OpenSSL::SSL::Error
       # Some Connect Failed, Ignore
+      exception = ex
     rescue ex : IO::Timeout
       # Some Connect Timeout, Ignore
+      exception = ex
     end
 
     if client.is_a? OpenSSL::SSL::SuperSocket::Server
       client.free
     end
+
+    handle_exception exception if exception
   end
 end
