@@ -158,17 +158,7 @@ class HTTP::Server
 
     begin
       @processor.process client, client
-    rescue ex : IO::Error
-      # Some Connect Failed, Ignore
-      exception = ex
-    rescue ex : Errno
-      # Some Connect Failed, Ignore
-      exception = ex
-    rescue ex : OpenSSL::SSL::Error
-      # Some Connect Failed, Ignore
-      exception = ex
-    rescue ex : IO::Timeout
-      # Some Connect Timeout, Ignore
+    rescue ex
       exception = ex
     end
 
