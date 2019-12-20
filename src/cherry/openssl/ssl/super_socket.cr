@@ -47,12 +47,8 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
       end
     end
 
-    def self.open(io, context : SuperContext::Client = SuperContext::Client.new, sync_context_free : Bool = true, hostname : String? = nil, &block)
-      yield new io: io, context: context, sync_context_free: sync_context_free, hostname: hostname rescue yield nil
-    end
-
-    def self.open!(io, context : SuperContext::Client = SuperContext::Client.new, sync_context_free : Bool = true, hostname : String? = nil, &block)
-      yield new io: io, context: context, sync_context_free: sync_context_free, hostname: hostname
+    def self.upgrade(io, context : SuperContext::Client = SuperContext::Client.new, sync_context_free : Bool = true, hostname : String? = nil)
+      new io: io, context: context, sync_context_free: sync_context_free, hostname: hostname rescue nil
     end
   end
 
@@ -69,12 +65,8 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
       end
     end
 
-    def self.open(io, context : SuperContext::Server = SuperContext::Server.new, sync_context_free : Bool = true, &block)
-      yield new io: io, context: context, sync_context_free: sync_context_free rescue yield nil
-    end
-
-    def self.open!(io, context : SuperContext::Server = SuperContext::Server.new, sync_context_free : Bool = true, &block)
-      yield new io: io, context: context, sync_context_free: sync_context_free
+    def self.upgrade(io, context : SuperContext::Server = SuperContext::Server.new, sync_context_free : Bool = true)
+      new io: io, context: context, sync_context_free: sync_context_free rescue nil
     end
   end
 
@@ -86,7 +78,6 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
     begin
       raise OpenSSL::Error.new "SSL_new" if context.freed?
     rescue ex
-      context_free
       raise ex
     end
 

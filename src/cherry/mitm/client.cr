@@ -1,42 +1,15 @@
 module MITM
   class Client
-    def self.open(io : TCPSocket, context : MITM::Context, hostname : String? = nil, &block)
-      context.create_client do |client_context|
-        open io: io, context: client_context, hostname: hostname do |_socket|
-          return yield _socket
-        end
+    def self.upgrade(io : TCPSocket, context : MITM::Context, hostname : String? = nil)
+      return io unless client_context = context.create_client
 
-        client_context.free
-      end
-    end
+      upgrade = OpenSSL::SSL::SuperSocket::Client.upgrade io: io,
+        context: client_context, sync_context_free: false, hostname: hostname
 
-    def self.open!(io : TCPSocket, context : MITM::Context, hostname : String? = nil, &block)
-      context.create_client do |client_context|
-        begin
-          open io: io, context: client_context, hostname: hostname do |_socket|
-            return yield _socket
-          end
-        rescue ex
-          client_context.free
-          raise ex
-        end
+      upgrade.sync = true if upgrade
+      client_context.free unless upgrade
 
-        client_context.free
-      end
-    end
-
-    def self.open(io : TCPSocket, context : OpenSSL::SSL::SuperContext::Client, hostname : String? = nil, &block)
-      OpenSSL::SSL::SuperSocket::Client.open io: io, context: context, hostname: hostname do |_socket|
-        return yield _socket
-      end
-
-      yield nil
-    end
-
-    def self.open!(io : TCPSocket, context : OpenSSL::SSL::SuperContext::Client, hostname : String? = nil, &block)
-      OpenSSL::SSL::SuperSocket::Client.open! io: io, context: context, hostname: hostname do |_socket|
-        yield _socket
-      end
+      upgrade || io
     end
   end
 end

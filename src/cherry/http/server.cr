@@ -105,6 +105,7 @@ class HTTP::Server
     while socket = server.accept?
       socket.try do |client|
         _client = client
+
         spawn same_thread: true do
           handle_client server, _client
         end

@@ -28,17 +28,25 @@ module MITM
     end
 
     def create_client(verify_mode = OpenSSL::SSL::VerifyMode::NONE, &block)
+      yield create_client verify_mode
+    end
+
+    def create_client(verify_mode = OpenSSL::SSL::VerifyMode::NONE)
       client = OpenSSL::SSL::SuperContext::Client.new
       client.verify_mode = verify_mode
-      yield client
+      client
     end
 
     def create_server(request : HTTP::Request, &block)
+      yield create_server request
+    end
+
+    def create_server(request : HTTP::Request)
       create_certificate_key request do |certificate, private_key|
         server = OpenSSL::SSL::SuperContext::Server.new
         server.ca_certificate_text = certificate
         server.private_key_text = private_key
-        yield server
+        server
       end
     end
 

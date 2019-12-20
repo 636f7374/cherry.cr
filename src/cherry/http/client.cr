@@ -98,10 +98,11 @@ class HTTP::Client
   end
 
   private def socket
-    socket = @socket
-    return socket if socket
+    _socket = @socket
+    return _socket if _socket
 
     hostname = @host.starts_with?('[') && @host.ends_with?(']') ? @host[1_i32..-2_i32] : @host
+
     begin
       socket = TCPSocket.new hostname, @port, @dns_timeout, @connect_timeout
       socket.read_timeout = @read_timeout if @read_timeout
