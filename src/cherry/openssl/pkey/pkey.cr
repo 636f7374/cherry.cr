@@ -32,7 +32,7 @@ module OpenSSL
       @pkey = pkey
     end
 
-    def self.parse_public_key(public_key : String, sync_free : Bool = false, password = nil, &block)
+    def self.parse_public_key(public_key : String, password = nil, sync_free : Bool = false, &block)
       _parse = parse_public_key public_key, password
 
       begin
@@ -50,7 +50,7 @@ module OpenSSL
       new pkey, KeyType::PublicKey
     end
 
-    def self.parse_private_key(private_key : String, sync_free : Bool = false, password = nil, &block)
+    def self.parse_private_key(private_key : String, password = nil, sync_free : Bool = false, &block)
       _parse = parse_private_key private_key, password
 
       begin

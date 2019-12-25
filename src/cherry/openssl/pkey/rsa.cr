@@ -103,7 +103,7 @@ module OpenSSL
       private_rsa = LibCrypto.rsaprivateKey_dup self
       raise OpenSSL::Error.new "RSAPrivateKey_dup" unless private_rsa
 
-      RSA.new private_rsa, KeyType::PrivateKey
+      new private_rsa, KeyType::PrivateKey
     end
 
     def public_key
@@ -116,7 +116,7 @@ module OpenSSL
       public_rsa = LibCrypto.rsapublickey_dup self
       raise OpenSSL::Error.new "RSAPublicKey_dup" unless public_rsa
 
-      RSA.new public_rsa, KeyType::PublicKey
+      new public_rsa, KeyType::PublicKey
     end
 
     def to_unsafe
