@@ -1,5 +1,5 @@
 module OpenSSL::X509
-  struct SuperCertificate
+  class SuperCertificate
     enum KeyUsage
       DigitalSignature
       NonRepudiation
@@ -26,17 +26,21 @@ module OpenSSL::X509
       NsSgc
     end
 
-    def initialize(@cert : LibCrypto::X509, &block)
-      yield self
-    end
-
     def initialize(@cert : LibCrypto::X509)
     end
 
-    def self.new(&block)
+    def self.new(cert : LibCrypto::X509, &block)
+      yield new cert
+    end
+
+    def self.new(sync_free : Bool = false, &block)
       cert = new
 
-      yield cert ensure cert.free
+      begin
+        yield cert
+      ensure
+        cert.free
+      end
     end
 
     def self.new
@@ -47,9 +51,14 @@ module OpenSSL::X509
       new LibCrypto.x509_new
     end
 
-    def self.parse(certificate : String, &block)
+    def self.parse(certificate : String, sync_free : Bool = false, &block)
       _parse = parse certificate
-      yield _parse ensure _parse.free
+
+      begin
+        yield _parse
+      ensure
+        _parse.free if sync_free
+      end
     end
 
     def self.parse(certificate : String)
@@ -137,6 +146,7 @@ module OpenSSL::X509
     def extension_count
       ret = LibCrypto.x509_get_ext_count self
       raise Error.new "X509_get_ext_count" if ret == 0_i32
+
       ret
     end
 
@@ -151,8 +161,11 @@ module OpenSSL::X509
     def extensions=(list : Array(LibCrypto::X509_EXTENSION))
       list.each do |item|
         if LibCrypto.x509_add_ext(self, item, -1_i32) == 0_i32
-          extension_free item ensure raise OpenSSL::Error.new
-        end ensure extension_free item
+          extension_free item
+          raise OpenSSL::Error.new "X509_add_ext"
+        end
+
+        extension_free item
       end
     end
 
@@ -172,7 +185,7 @@ module OpenSSL::X509
     end
 
     def sign(pkey : OpenSSL::PKey | LibCrypto::EVP_PKEY, algorithm = LibCrypto.evp_sha256)
-      raise OpenSSL::Error.new if LibCrypto.x509_sign(self, pkey, algorithm) == 0_i32
+      raise OpenSSL::Error.new "X509_sign" if LibCrypto.x509_sign(self, pkey, algorithm) == 0_i32
     end
 
     def to_io(io : IO)
@@ -183,20 +196,15 @@ module OpenSSL::X509
 
     def to_s
       io = IO::Memory.new
-
-      begin
-        to_io io
-      rescue ex
-        io.close
-        raise ex
-      end
-
+      to_io io
       io.to_s ensure io.close
     end
 
     def subject_name=(subject : String)
       name = SuperName.parse subject
-      subject_name = name ensure name.finalize
+      self.subject_name = name
+      name.free
+
       subject
     end
 
@@ -209,7 +217,9 @@ module OpenSSL::X509
 
     def issuer_name=(issuer : String)
       name = SuperName.parse issuer
-      issuer_name = name
+      self.issuer_name = name
+
+      issuer
     end
 
     def issuer_name=(name : SuperName)
@@ -226,12 +236,14 @@ module OpenSSL::X509
     def public_key=(pkey : OpenSSL::PKey | LibCrypto::EVP_PKEY)
       ret = LibCrypto.x509_set_pubkey self, pkey
       raise Error.new "X509_set_pubkey" if ret == 0_i32
+
       @pkey = pkey
     end
 
     def version=(version = 2_i64)
       ret = LibCrypto.x509_set_version self, version
       raise Error.new "X509_set_version" if ret == 0_i32
+
       version
     end
 
@@ -240,21 +252,27 @@ module OpenSSL::X509
       LibCrypto.asn1_integer_set asn1, number
       ret = LibCrypto.x509_set_serialnumber self, asn1
       raise Error.new "X509_set_serialNumber" if ret == 0_i32
-      number ensure asn1.free
+
+      asn1.free
+      number
     end
 
-    def not_before=(valid_period = 0_i64)
+    def not_before=(valid_period : Int = 0_i64)
       asn1 = ASN1::Time.days_from_now valid_period
       ret = LibCrypto.x509_set_notbefore self, asn1
       raise Error.new "X509_set_notBefore" if ret == 0_i32
-      valid_period ensure asn1.free
+
+      asn1.free
+      valid_period
     end
 
-    def not_after=(valid_period = 365_i64)
+    def not_after=(valid_period : Int = 365_i64)
       asn1 = ASN1::Time.days_from_now valid_period
       ret = LibCrypto.x509_set_notafter self, asn1
       raise Error.new "X509_set_notAfter" if ret == 0_i32
-      valid_period ensure asn1.free
+
+      asn1.free
+      valid_period
     end
 
     def random_serial

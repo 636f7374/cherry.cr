@@ -35,14 +35,7 @@ class OpenSSL::MemBIO < IO
 
   def to_s
     io = IO::Memory.new
-
-    begin
-      to_io io
-    rescue ex
-      io.close
-      raise ex
-    end
-
+    to_io io
     io.to_s ensure io.close
   end
 

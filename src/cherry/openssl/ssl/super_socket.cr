@@ -46,10 +46,6 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
         {% end %}
       end
     end
-
-    def self.upgrade(io, context : SuperContext::Client = SuperContext::Client.new, sync_context_free : Bool = true, hostname : String? = nil)
-      new io: io, context: context, sync_context_free: sync_context_free, hostname: hostname rescue nil
-    end
   end
 
   class Server < SuperSocket
@@ -63,10 +59,6 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
         sync_context_free ? all_free : free
         raise ex
       end
-    end
-
-    def self.upgrade(io, context : SuperContext::Server = SuperContext::Server.new, sync_context_free : Bool = true)
-      new io: io, context: context, sync_context_free: sync_context_free rescue nil
     end
   end
 

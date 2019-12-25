@@ -1,15 +1,21 @@
 require "./pkey.cr"
 
 module OpenSSL
-  struct PKey::RSA
-    def initialize(@rsa : LibCrypto::RSA, @keyType = KeyType::PublicKey)
-      @pkey = LibCrypto.evp_pkey_new
+  class PKey::RSA < PKey
+    def initialize(@rsa : LibCrypto::RSA, keyType = KeyType::All)
+      super keyType
+
       LibCrypto.evp_pkey_assign @pkey, OpenSSL::NID::NID_rsaEncryption, @rsa.as Pointer(Void)
     end
 
-    def self.new(size : Int = 4096_i32, &block)
+    def self.new(size : Int = 4096_i32, sync_free : Bool = false, &block)
       rsa = new size
-      yield rsa ensure rsa.pkey_free
+
+      begin
+        yield rsa
+      ensure
+        rsa.pkey_free if sync_free
+      end
     end
 
     def self.new(size : Int = 4096_i32)
@@ -20,8 +26,8 @@ module OpenSSL
       new LibCrypto.rsa_generate_key(size, exponent, nil, nil), KeyType::All
     end
 
-    def pkey
-      @pkey
+    def self.free(pkey : LibCrypto::EVP_PKEY)
+      LibCrypto.evp_pkey_free pkey
     end
 
     def self.rsa_free(rsa : LibCrypto::RSA)
@@ -32,12 +38,8 @@ module OpenSSL
       RSA.rsa_free rsa
     end
 
-    def free
-      RSA.rsa_free pkey
-    end
-
     def self.pkey_free(pkey : LibCrypto::EVP_PKEY)
-      OpenSSL::PKey.free pkey
+      RSA.free pkey
     end
 
     def pkey_free(pkey : LibCrypto::EVP_PKEY)
@@ -49,7 +51,7 @@ module OpenSSL
     end
 
     def self.parse_public_key(public_key : String, password = nil)
-      pkey = PKey.parse_public_key public_key, password
+      pkey = RSA.parse_public_key public_key, password
       pkey.to_rsa
     end
 
@@ -65,7 +67,7 @@ module OpenSSL
       bio = MemBIO.new
       case keyType
       when KeyType::PrivateKey
-        LibCrypto.pem_write_bio_rsaprivatekey bio, self, cipher, nil, 0, nil, password
+        LibCrypto.pem_write_bio_rsaprivatekey bio, self, cipher, nil, 0_i32, nil, password
       when KeyType::PublicKey
         LibCrypto.pem_write_bio_rsa_pubkey bio, self
       end
@@ -79,13 +81,7 @@ module OpenSSL
 
     def to_s(keyType : KeyType, cipher = nil, password = nil)
       io = IO::Memory.new
-
-      begin
-        to_io io, keyType, cipher, password
-      rescue ex
-        io.close ensure raise ex
-      end
-
+      to_io io, keyType, cipher, password
       io.to_s ensure io.close
     end
 
@@ -99,6 +95,7 @@ module OpenSSL
 
     def private_key
       return unless keyType == KeyType::All
+
       private_key!
     end
 
@@ -106,7 +103,7 @@ module OpenSSL
       private_rsa = LibCrypto.rsaprivateKey_dup self
       raise OpenSSL::Error.new "RSAPrivateKey_dup" unless private_rsa
 
-      new private_rsa, KeyType::PrivateKey
+      RSA.new private_rsa, KeyType::PrivateKey
     end
 
     def public_key
@@ -119,7 +116,7 @@ module OpenSSL
       public_rsa = LibCrypto.rsapublickey_dup self
       raise OpenSSL::Error.new "RSAPublicKey_dup" unless public_rsa
 
-      new public_rsa, KeyType::PublicKey
+      RSA.new public_rsa, KeyType::PublicKey
     end
 
     def to_unsafe

@@ -1,5 +1,5 @@
 module OpenSSL::X509
-  struct ExtensionFactory
+  class ExtensionFactory
     def initialize(@issuerCertificate : SuperCertificate, @subjectCertificate : SuperCertificate)
     end
 

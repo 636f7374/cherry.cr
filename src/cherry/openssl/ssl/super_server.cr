@@ -4,8 +4,8 @@ class OpenSSL::SSL::SuperServer
   # Returns the wrapped server socket.
   getter wrapped : ::Socket::Server
 
-  # Returns the SSL context.
-  getter context : OpenSSL::SSL::SuperContext::Server
+  getter certificate : String
+  getter privateKey : String
 
   # If `#sync_close?` is `true`, closing this server will
   # close the wrapped server.
@@ -15,31 +15,23 @@ class OpenSSL::SSL::SuperServer
   getter? closed : Bool = false
 
   # Creates a new SSL server wrapping *wrapped*.
-  #
-  # *context* configures the SSL options, see `OpenSSL::SSL::SuperContext::Server` for details
-  def initialize(@wrapped : ::Socket::Server, @context : OpenSSL::SSL::SuperContext::Server = OpenSSL::SSL::SuperContext::Server.new, @sync_close : Bool = true)
-  end
-
-  # Creates a new SSL server wrapping *wrapped*  and yields it to the block.
-  #
-  # *context* configures the SSL options, see `OpenSSL::SSL::SuperContext::Server` for details
-  #
-  # The server is closed after the block returns.
-  def self.open(wrapped : ::Socket::Server, context : OpenSSL::SSL::SuperContext::Server = OpenSSL::SSL::SuperContext::Server.new, sync_close : Bool = true)
-    server = new wrapped, context, sync_close
-
-    begin
-      yield server
-    ensure
-      server.close
-    end
+  def initialize(@wrapped : ::Socket::Server, @certificate : String, @privateKey : String, @sync_close : Bool = true)
   end
 
   # Implements `::Socket::Server#accept`.
   #
   # This method calls `@wrapped.accept` and wraps the resulting IO in a SSL socket (`OpenSSL::SSL::Socket::Server`) with `context` configuration.
   def accept : OpenSSL::SSL::SuperSocket::Server
-    OpenSSL::SSL::SuperSocket::Server.new @wrapped.accept, @context, sync_context_free: false
+    context = OpenSSL::SSL::SuperContext::Server.new
+    context.ca_certificate_text = certificate
+    context.private_key_text = privateKey
+
+    begin
+      OpenSSL::SSL::SuperSocket::Server.new @wrapped.accept, context, sync_context_free: true
+    rescue ex
+      context.free
+      raise ex
+    end
   end
 
   # Implements `::Socket::Server#accept?`.
@@ -47,10 +39,15 @@ class OpenSSL::SSL::SuperServer
   # This method calls `@wrapped.accept?` and wraps the resulting IO in a SSL socket (`OpenSSL::SSL::Socket::Server`) with `context` configuration.
   def accept? : OpenSSL::SSL::SuperSocket::Server?
     if socket = @wrapped.accept?
+      context = OpenSSL::SSL::SuperContext::Server.new
+      context.ca_certificate_text = certificate
+      context.private_key_text = privateKey
+
       begin
-        OpenSSL::SSL::SuperSocket::Server.new socket, @context, sync_context_free: false
+        OpenSSL::SSL::SuperSocket::Server.new socket, context, sync_context_free: true
       rescue ex
-        socket.close ensure raise ex
+        socket.close
+        raise ex
       end
     end
   end
@@ -63,11 +60,15 @@ class OpenSSL::SSL::SuperServer
     wrapped.client_write_timeout
   end
 
+  def closed?
+    @closed
+  end
+
   # Closes this SSL server.
   #
   # Propagates to `wrapped` if `sync_close` is `true`.
   def close
-    return if @closed
+    return if closed?
     @closed = true
 
     @wrapped.close if @sync_close

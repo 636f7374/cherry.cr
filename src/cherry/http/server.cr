@@ -30,12 +30,12 @@ class HTTP::Server
   end
 
   {% unless flag?(:without_openssl) %}
-    def bind_tls(host : String, port : Int32, context : OpenSSL::SSL::SuperContext::Server,
+    def bind_tls(host : String, port : Int32, certificate : String, private_key : String,
                  write_timeout : Int32? = nil, read_timeout : Int32? = nil, reuse_port : Bool = false) : Socket::IPAddress
       tcp_server = TCPServer.new host, port, reuse_port: reuse_port
       read_timeout.try { |_read_timeout| tcp_server.client_read_timeout = _read_timeout }
       write_timeout.try { |_write_timeout| tcp_server.client_write_timeout = _write_timeout }
-      server = OpenSSL::SSL::SuperServer.new tcp_server, context
+      server = OpenSSL::SSL::SuperServer.new tcp_server, certificate, private_key
 
       begin
         bind server
@@ -45,14 +45,6 @@ class HTTP::Server
       end
 
       tcp_server.local_address
-    end
-
-    def bind_tls(host : String, context : OpenSSL::SSL::SuperContext::Server) : Socket::IPAddress
-      bind_tls host, 0_i32, context
-    end
-
-    def bind_tls(address : Socket::IPAddress, context : OpenSSL::SSL::SuperContext::Server) : Socket::IPAddress
-      bind_tls address.address, address.port, context
     end
 
     def bind_tls(host : String, port : Int32, context : OpenSSL::SSL::Context::Server,
@@ -73,26 +65,6 @@ class HTTP::Server
     end
   {% end %}
 
-  def bind(uri : URI) : Socket::Address
-    case uri.scheme
-    when "tcp"
-      bind_tcp Socket::IPAddress.parse(uri)
-    when "unix"
-      bind_unix Socket::UNIXAddress.parse(uri)
-    when "tls", "ssl"
-      address = Socket::IPAddress.parse(uri)
-      {% unless flag?(:without_openssl) %}
-        context = OpenSSL::SSL::SuperContext::Server.from_hash HTTP::Params.parse(uri.query || "")
-
-        bind_tls address, context
-      {% else %}
-        raise ArgumentError.new "Unsupported socket type: #{uri.scheme} (program was compiled without openssl support)"
-      {% end %}
-    else
-      raise ArgumentError.new "Unsupported socket type: #{uri.scheme}"
-    end
-  end
-
   private def accept(server : Socket::Server)
     begin
       accept! server
@@ -103,12 +75,10 @@ class HTTP::Server
 
   private def accept!(server : Socket::Server)
     while socket = server.accept?
-      socket.try do |client|
-        _client = client
+      next unless client = socket
 
-        spawn same_thread: true do
-          handle_client server, _client
-        end
+      spawn same_thread: true do
+        handle_client server, client
       end
     end
   end
@@ -164,7 +134,7 @@ class HTTP::Server
     end
 
     if client.is_a? OpenSSL::SSL::SuperSocket::Server
-      client.free
+      client.all_free
     end
 
     handle_exception exception if exception

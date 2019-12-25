@@ -1,16 +1,20 @@
 module OpenSSL::X509
-  struct SuperName
-    def initialize(name, dup : Bool = false)
-      if dup
-        @name = LibCrypto.x509_name_dup name
-      else
-        @name = name
-      end
+  class SuperName
+    def initialize(@name : LibCrypto::X509_NAME)
     end
 
-    def self.new(&block)
+    def self.new(name, dup : Bool = false)
+      new dup ? LibCrypto.x509_name_dup(name) : name
+    end
+
+    def self.new(sync_free : Bool = false, &block)
       name = new
-      yield name ensure name.free
+
+      begin
+        yield name
+      ensure
+        name.free if sync_free
+      end
     end
 
     def self.new

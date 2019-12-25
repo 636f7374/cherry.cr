@@ -5,8 +5,18 @@ module MITM
 
     getter rootCertificate : OpenSSL::X509::SuperCertificate
     getter rootPrivateKey : OpenSSL::PKey
+    property country : String
+    property location : String
+    property notBefore : Int64
+    property notAfter : Int64
+    property hostName : String
 
-    protected def initialize(@rootCertificate, @rootPrivateKey)
+    def initialize(@rootCertificate, @rootPrivateKey)
+      @country = "FI"
+      @location = "Helsinki"
+      @notBefore = -1_i64
+      @notAfter = 365_i64
+      @hostName = String.new
     end
 
     def self.from_string(rootCertificate : String, rootPrivateKey : String, &block)
@@ -42,49 +52,42 @@ module MITM
     end
 
     def create_server(request : HTTP::Request)
-      create_certificate_key request do |certificate, private_key|
-        server = OpenSSL::SSL::SuperContext::Server.new
-        server.ca_certificate_text = certificate
-        server.private_key_text = private_key
-        server
-      end
+      create_context request
     end
 
     def create_all(request : HTTP::Request, verify_mode = OpenSSL::SSL::VerifyMode::NONE, &block)
-      create_server request do |server|
-        create_client verify_mode do |client|
-          yield client, server
-        end
-      end
+      return unless server = create_server request
+      return unless client = create_client verify_mode
+
+      yield client, server
     end
 
-    def create_certificate_key(request : HTTP::Request, &block)
-      request.host.try do |host|
-        create_certificate_key host do |certificate, private_key|
-          yield certificate, private_key
-        end
-      end
+    def create_context(request : HTTP::Request)
+      return unless host = request.host
+
+      create_context host
     end
 
-    def create_certificate_key(hostname : String, &block)
-      OpenSSL::PKey::RSA.new 2048_i32 do |rsa|
-        OpenSSL::X509::SuperCertificate.new do |certificate|
+    def create_context(hostname : String = self.hostName)
+      OpenSSL::PKey::RSA.new 2048_i32, sync_free: true do |rsa|
+        OpenSSL::X509::SuperCertificate.new sync_free: true do |certificate|
           issuer_name = rootCertificate.subject_name
           x509_name = OpenSSL::X509::SuperName.new
-          x509_name.add_entry "C", "FI"
+          x509_name.add_entry "C", country
           x509_name.add_entry "ST", " "
-          x509_name.add_entry "L", "Helsinki"
+          x509_name.add_entry "L", location
           x509_name.add_entry "O", " "
           x509_name.add_entry "OU", " "
           x509_name.add_entry "CN", hostname
           certificate.version = 2_i32
           certificate.serial = certificate.random_serial
-          certificate.not_before = -1_i64
-          certificate.not_after = 365_i64
+          certificate.not_before = notBefore
+          certificate.not_after = notAfter
           certificate.public_key = rsa.pkey
           certificate.subject_name = x509_name
           certificate.issuer_name = issuer_name
           extension = OpenSSL::X509::ExtensionFactory.new rootCertificate
+
           certificate.extensions = [
             extension.create(OpenSSL::NID::NID_basic_constraints, "CA:FALSE", true),
             extension.create(OpenSSL::NID::NID_subject_key_identifier, "hash", false),
@@ -98,13 +101,15 @@ module MITM
               KeyUsage::KeyEncipherment, KeyUsage::DataEncipherment,
             ]),
           ]
-          certificate.sign rootPrivateKey.pkey
 
-          begin
-            yield certificate, rsa.pkey
-          ensure
-            issuer_name.free ensure x509_name.free
-          end
+          certificate.sign rootPrivateKey.pkey
+          issuer_name.free ensure x509_name.free
+
+          server = OpenSSL::SSL::SuperContext::Server.new
+          server.ca_certificate_text = certificate
+          server.private_key_text = rsa.pkey
+
+          server
         end
       end
     end

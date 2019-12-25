@@ -1,15 +1,20 @@
 module OpenSSL::X509
-  struct Request
-    def initialize(@req : LibCrypto::X509_REQ, &block)
-      yield self
-    end
-
+  class SuperRequest
     def initialize(@req : LibCrypto::X509_REQ)
     end
 
-    def self.new(&block)
+    def self.new(req : LibCrypto::X509_REQ, &block)
+      yield new req
+    end
+
+    def self.new(sync_free : Bool = false, &block)
       req = new
-      yield req ensure req.free
+
+      begin
+        yield req
+      ensure
+        req.free if sync_free
+      end
     end
 
     def self.new
@@ -35,7 +40,7 @@ module OpenSSL::X509
       subject = LibCrypto.x509_req_get_subject_name self
       raise OpenSSL::Error.new "X509_REQ_get_subject_name" if subject.null?
 
-      Name.new subject
+      SuperName.new subject, true
     end
 
     def public_key
@@ -84,19 +89,18 @@ module OpenSSL::X509
     end
 
     def sign(pkey : OpenSSL::PKey | LibCrypto::EVP_PKEY, algorithm = LibCrypto.evp_sha256)
-      if LibCrypto.x509_req_sign(self, pkey, algorithm) == 0_i32
-        raise OpenSSL::Error.new
-      end
+      raise OpenSSL::Error.new "X509_REQ_sign" if LibCrypto.x509_req_sign(self, pkey, algorithm) == 0_i32
     end
 
     def subject_name=(subject : String)
-      name = Name.parse subject
-      subject_name = name ensure name.finalize
+      name = SuperName.parse subject
+      self.subject_name = name
 
+      name.free
       subject
     end
 
-    def subject_name=(name : Name)
+    def subject_name=(name : SuperName)
       ret = LibCrypto.x509_req_set_subject_name self, name
       raise OpenSSL::Error.new "X509_set_subject_name" if ret == 0_i32
 
@@ -129,14 +133,7 @@ module OpenSSL::X509
 
     def to_s
       io = IO::Memory.new
-
-      begin
-        to_io io
-      rescue ex
-        io.close
-        raise ex
-      end
-
+      to_io io
       io.to_s ensure io.close
     end
 
