@@ -14,7 +14,11 @@ module MITM
     end
 
     def self.part(socket : TCPSocket, &block)
-      yield part! socket rescue yield IO::Memory.new
+      yield part socket
+    end
+
+    def self.part(socket : TCPSocket)
+      part! socket rescue IO::Memory.new
     end
 
     def self.part!(socket : TCPSocket, &block)

@@ -16,11 +16,11 @@ module OpenSSL
       @pkey = LibCrypto.evp_pkey_new
     end
 
-    def self.free(pkey : LibCrypto::EVP_PKEY)
+    def self.free(pkey : LibCrypto::EVP_PKEY | PKey)
       LibCrypto.evp_pkey_free pkey
     end
 
-    def free(pkey : LibCrypto::EVP_PKEY)
+    def free(pkey : LibCrypto::EVP_PKEY | PKey)
       PKey.free pkey
     end
 

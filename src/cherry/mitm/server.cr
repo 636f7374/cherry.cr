@@ -13,6 +13,13 @@ module MITM
     end
 
     def self.extract(socket : TCPSocket, sync_close : Bool = true)
+      part = Extract.part socket
+      stream = Extract.new socket, part
+
+      Tuple.new part.dup, IO::Stapled.new stream, socket, sync_close
+    end
+
+    def self.extract(socket : TCPSocket, sync_close : Bool = true, &block)
       Extract.part socket do |part|
         Extract.new socket, part do |stream|
           yield part.dup, IO::Stapled.new stream, socket, sync_close

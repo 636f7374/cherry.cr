@@ -30,8 +30,14 @@ abstract class OpenSSL::SSL::SuperContext < OpenSSL::SSL::Context
 
     # Set the CA certificate by string, in PEM format, used to
     # validate the peers certificate.
-    def ca_certificate_text=(certificate : String)
-      self.ca_certificate_text = OpenSSL::X509::SuperCertificate.parse certificate
+    def set_ca_certificate_text(certificate : String, sync_free : Bool = false)
+      certificate = OpenSSL::X509::SuperCertificate.parse certificate
+
+      begin
+        self.ca_certificate_text = certificate
+      ensure
+        certificate.free if sync_free
+      end
     end
 
     # Set the CA certificate by string, in PEM format, used to
@@ -41,10 +47,14 @@ abstract class OpenSSL::SSL::SuperContext < OpenSSL::SSL::Context
       raise OpenSSL::Error.new "SSL_CTX_use_certificate" unless ret == 1_i32
     end
 
-    # Set the private key by string, The key must in PEM format.
-    def private_key_text=(private_key : String)
+    def set_private_key_text(private_key : String, sync_free : Bool = false)
       parse = OpenSSL::PKey.parse_private_key private_key
-      self.private_key_text = parse.pkey
+
+      begin
+        self.private_key_text = parse.pkey
+      ensure
+        parse.free if sync_free
+      end
     end
 
     # Set the private key by string, The key must in PEM format.
