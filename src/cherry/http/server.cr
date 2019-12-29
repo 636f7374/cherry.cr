@@ -77,9 +77,7 @@ class HTTP::Server
     while socket = server.accept?
       next unless client = socket
 
-      spawn same_thread: true do
-        handle_client server, client
-      end
+      spawn handle_client server, client
     end
   end
 
@@ -102,7 +100,7 @@ class HTTP::Server
     done = Channel(Nil).new
 
     @sockets.each do |socket|
-      spawn same_thread: true do
+      spawn do
         until closed?
           accept socket
         end
@@ -125,18 +123,22 @@ class HTTP::Server
       client.skip_free = true
     end
 
-    exception = nil
+    spawn same_thread: true do
+      exception = nil
 
-    begin
-      @processor.process client, client
-    rescue ex
-      exception = ex
+      begin
+        @processor.process client, client
+      rescue ex
+        exception = ex
+      end
+
+      _client = client
+
+      if _client.responds_to? :all_free
+        _client.all_free
+      end
+
+      handle_exception exception if exception
     end
-
-    if client.is_a? OpenSSL::SSL::SuperSocket::Server
-      client.all_free
-    end
-
-    handle_exception exception if exception
   end
 end

@@ -3,8 +3,8 @@ module MITM
     alias ExtKeyUsage = OpenSSL::X509::SuperCertificate::ExtKeyUsage
     alias KeyUsage = OpenSSL::X509::SuperCertificate::KeyUsage
 
-    getter rootCertificate : OpenSSL::X509::SuperCertificate
-    getter rootPrivateKey : OpenSSL::PKey
+    getter rootCertificate : String
+    getter rootPrivateKey : String
     property country : String
     property location : String
     property notBefore : Int64
@@ -19,22 +19,16 @@ module MITM
       @hostName = String.new
     end
 
-    def self.from_string(rootCertificate : String, rootPrivateKey : String, &block)
-      yield from_string rootCertificate, rootPrivateKey
+    def self.new(&block)
+      yield new
     end
 
     def self.from_path(rootCertificate : String, rootPrivateKey : String, &block)
       yield from_path rootCertificate, rootPrivateKey
     end
 
-    def self.from_string(rootCertificate : String, rootPrivateKey : String)
-      new OpenSSL::X509::SuperCertificate.parse(rootCertificate),
-        OpenSSL::PKey.parse_private_key(rootPrivateKey)
-    end
-
     def self.from_path(rootCertificate : String, rootPrivateKey : String)
-      new OpenSSL::X509::SuperCertificate.parse(File.read rootCertificate),
-        OpenSSL::PKey.parse_private_key(File.read rootPrivateKey)
+      new File.read(rootCertificate), File.read(rootPrivateKey)
     end
 
     def create_client(verify_mode = OpenSSL::SSL::VerifyMode::NONE, &block)
@@ -69,9 +63,12 @@ module MITM
     end
 
     def create_context(hostname : String = self.hostName)
+      root_certificate = OpenSSL::X509::SuperCertificate.parse rootCertificate
+      root_private_key = OpenSSL::PKey.parse_private_key rootPrivateKey
+
       OpenSSL::PKey::RSA.new 2048_i32, sync_free: true do |rsa|
         OpenSSL::X509::SuperCertificate.new sync_free: true do |certificate|
-          issuer_name = rootCertificate.subject_name
+          issuer_name = root_certificate.subject_name
           x509_name = OpenSSL::X509::SuperName.new
           x509_name.add_entry "C", country
           x509_name.add_entry "ST", " "
@@ -86,7 +83,7 @@ module MITM
           certificate.public_key = rsa.pkey
           certificate.subject_name = x509_name
           certificate.issuer_name = issuer_name
-          extension = OpenSSL::X509::ExtensionFactory.new rootCertificate
+          extension = OpenSSL::X509::ExtensionFactory.new root_certificate
 
           certificate.extensions = [
             extension.create(OpenSSL::NID::NID_basic_constraints, "CA:FALSE", true),
@@ -102,8 +99,9 @@ module MITM
             ]),
           ]
 
-          certificate.sign rootPrivateKey.pkey
+          certificate.sign root_private_key.pkey
           issuer_name.free ensure x509_name.free
+          root_certificate.free ensure root_private_key.free
 
           server = OpenSSL::SSL::SuperContext::Server.new
           server.ca_certificate_text = certificate
