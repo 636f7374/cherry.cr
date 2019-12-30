@@ -51,14 +51,14 @@ abstract class OpenSSL::SSL::SuperContext < OpenSSL::SSL::Context
       parse = OpenSSL::PKey.parse_private_key private_key
 
       begin
-        self.private_key_text = parse.pkey
+        self.private_key_text = parse
       ensure
         parse.free if sync_free
       end
     end
 
     # Set the private key by string, The key must in PEM format.
-    def private_key_text=(pkey : LibCrypto::EVP_PKEY)
+    def private_key_text=(pkey : LibCrypto::EVP_PKEY | OpenSSL::PKey)
       ret = LibSSL.ssl_ctx_use_privatekey @handle, pkey
       raise OpenSSL::Error.new "SSL_CTX_use_PrivateKey" unless ret == 1_i32
     end
