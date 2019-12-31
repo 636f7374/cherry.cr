@@ -61,6 +61,14 @@ class HTTP::Client
     @socket = nil
   end
 
+  def dns_resolver=(value : Durian::Resolver)
+    @dns_resolver = value
+  end
+
+  def dns_resolver
+    @dns_resolver
+  end
+
   def super_context_freed?
     return unless _tls = @tls
 
@@ -104,7 +112,12 @@ class HTTP::Client
     hostname = @host.starts_with?('[') && @host.ends_with?(']') ? @host[1_i32..-2_i32] : @host
 
     begin
-      socket = TCPSocket.new hostname, @port, @dns_timeout, @connect_timeout
+      if resolver = dns_resolver
+        socket = Durian::TCPSocket.new hostname, @port, resolver, @connect_timeout
+      else
+        socket = TCPSocket.new hostname, @port, @dns_timeout, @connect_timeout
+      end
+
       socket.read_timeout = @read_timeout if @read_timeout
       socket.sync = false
       self.original_socket = socket
