@@ -1,5 +1,5 @@
 module OpenSSL::ASN1
-  struct Time
+  class Time
     def initialize(@time : LibCrypto::ASN1_TIME)
     end
 

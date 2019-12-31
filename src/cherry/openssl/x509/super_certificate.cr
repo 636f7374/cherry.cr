@@ -129,6 +129,20 @@ module OpenSSL::X509
       ret
     end
 
+    def not_before
+      before = LibCrypto.x509_get0_notbefore self
+      raise Error.new "X509_get0_notBefore" if before.null?
+
+      ASN1::Time.new before
+    end
+
+    def not_after
+      after = LibCrypto.x509_get0_notafter self
+      raise Error.new "X509_get0_notAfter" if after.null?
+
+      ASN1::Time.new after
+    end
+
     def issuer_name
       issuer = LibCrypto.x509_get_issuer_name self
       raise Error.new "X509_get_issuer_name" if issuer.null?
@@ -259,8 +273,18 @@ module OpenSSL::X509
 
     def not_before=(valid_period : Int = 0_i64)
       asn1 = ASN1::Time.days_from_now valid_period
-      ret = LibCrypto.x509_set_notbefore self, asn1
-      raise Error.new "X509_set_notBefore" if ret == 0_i32
+
+      {% if compare_versions(LibSSL::OPENSSL_VERSION, "1.0.2") >= 0_i32 %}
+        ret = LibCrypto.x509_set1_notbefore self, asn1
+      {% else %}
+        ret = LibCrypto.x509_set_notbefore self, asn1
+      {% end %}
+
+      {% if compare_versions(LibSSL::OPENSSL_VERSION, "1.0.2") >= 0_i32 %}
+        raise Error.new "X509_set1_notBefore" if ret == 0_i32
+      {% else %}
+        raise Error.new "X509_set_notBefore" if ret == 0_i32
+      {% end %}
 
       asn1.free
       valid_period
@@ -268,8 +292,18 @@ module OpenSSL::X509
 
     def not_after=(valid_period : Int = 365_i64)
       asn1 = ASN1::Time.days_from_now valid_period
-      ret = LibCrypto.x509_set_notafter self, asn1
-      raise Error.new "X509_set_notAfter" if ret == 0_i32
+
+      {% if compare_versions(LibSSL::OPENSSL_VERSION, "1.0.2") >= 0_i32 %}
+        ret = LibCrypto.x509_set1_notafter self, asn1
+      {% else %}
+        ret = LibCrypto.x509_set1_notafter self, asn1
+      {% end %}
+
+      {% if compare_versions(LibSSL::OPENSSL_VERSION, "1.0.2") >= 0_i32 %}
+        raise Error.new "X509_set1_notAfter" if ret == 0_i32
+      {% else %}
+        raise Error.new "X509_set_notAfter" if ret == 0_i32
+      {% end %}
 
       asn1.free
       valid_period

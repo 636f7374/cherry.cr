@@ -150,6 +150,10 @@ lib LibCrypto
   fun x509_get_serialnumber = X509_get_serialNumber(x : X509) : ASN1_INTEGER
   fun x509_set_notbefore = X509_set_notBefore(x : X509, tm : ASN1_TIME) : Int
   fun x509_set_notafter = X509_set_notAfter(x : X509, tm : ASN1_TIME) : Int
+  fun x509_set1_notbefore = X509_set1_notBefore(x : X509, tm : ASN1_TIME) : Int
+  fun x509_set1_notafter = X509_set1_notAfter(x : X509, tm : ASN1_TIME) : Int
+  fun x509_get0_notbefore = X509_get0_notBefore(x : X509) : ASN1_TIME
+  fun x509_get0_notafter = X509_get0_notAfter(x : X509) : ASN1_TIME
   fun x509_set_version = X509_set_version(x : X509, version : Long) : Int
   fun x509_set_pubkey = X509_set_pubkey(x : X509, pkey : EVP_PKEY) : Int
   fun x509_set_issuer_name = X509_set_issuer_name(x : X509, name : X509_NAME) : Int

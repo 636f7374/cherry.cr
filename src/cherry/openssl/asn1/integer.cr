@@ -1,5 +1,5 @@
 module OpenSSL::ASN1
-  struct Integer
+  class Integer
     def initialize(@integer : LibCrypto::ASN1_INTEGER)
     end
 
