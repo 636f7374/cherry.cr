@@ -37,24 +37,25 @@ module OpenSSL
       new dsa_key, KeyType::All
     end
 
-    def self.dsa_free(dsa : LibCrypto::DSA)
+    def free
+      DSA.free self
+      pkey_free
+    end
+
+    def self.free(dsa : DSA | LibCrypto::DSA)
       LibCrypto.dsa_free dsa
-    end
-
-    def dsa_free(dsa : LibCrypto::DSA)
-      DSA.dsa_free dsa
-    end
-
-    def self.pkey_free(pkey : LibCrypto::EVP_PKEY)
-      DSA.free pkey
-    end
-
-    def pkey_free(pkey : LibCrypto::EVP_PKEY)
-      DSA.pkey_free pkey
     end
 
     def pkey_free
       DSA.pkey_free pkey
+    end
+
+    def self.pkey_free(pkey : PKey | LibCrypto::EVP_PKEY)
+      Pkey.free pkey
+    end
+
+    def pkey_free(pkey : LibCrypto::EVP_PKEY)
+      PKey.free pkey
     end
 
     def self.parse_public_key(public_key : String, password = nil)

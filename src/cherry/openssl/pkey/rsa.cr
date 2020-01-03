@@ -1,5 +1,3 @@
-require "./pkey.cr"
-
 module OpenSSL
   class PKey::RSA < PKey
     def initialize(@rsa : LibCrypto::RSA, keyType = KeyType::All)
@@ -26,27 +24,28 @@ module OpenSSL
       new LibCrypto.rsa_generate_key(size, exponent, nil, nil), KeyType::All
     end
 
-    def self.free(pkey : LibCrypto::EVP_PKEY)
-      LibCrypto.evp_pkey_free pkey
+    def free
+      RSA.free self
+      pkey_free
     end
 
-    def self.rsa_free(rsa : LibCrypto::RSA)
+    def self.free(rsa : RSA | LibCrypto::RSA)
       LibCrypto.rsa_free rsa
     end
 
-    def rsa_free(rsa : LibCrypto::RSA)
-      RSA.rsa_free rsa
-    end
-
-    def self.pkey_free(pkey : LibCrypto::EVP_PKEY)
-      RSA.free pkey
-    end
-
-    def pkey_free(pkey : LibCrypto::EVP_PKEY)
+    def pkey_free
       RSA.pkey_free pkey
     end
 
-    def pkey_free
+    def self.free(pkey : PKey | LibCrypto::EVP_PKEY)
+      PKey.free pkey
+    end
+
+    def self.pkey_free(pkey : PKey | LibCrypto::EVP_PKEY)
+      PKey.free pkey
+    end
+
+    def pkey_free(pkey : PKey | LibCrypto::EVP_PKEY)
       RSA.pkey_free pkey
     end
 
