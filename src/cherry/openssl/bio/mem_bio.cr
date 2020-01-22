@@ -25,10 +25,6 @@ class OpenSSL::MemBIO < IO
     ret
   end
 
-  def finalize
-    LibCrypto.bio_free_all self
-  end
-
   def to_io(io : IO)
     IO.copy self, io
   end
@@ -36,7 +32,11 @@ class OpenSSL::MemBIO < IO
   def to_s
     io = IO::Memory.new
     to_io io
-    io.to_s ensure io.close
+    io.to_s
+  end
+
+  def finalize
+    LibCrypto.bio_free_all self
   end
 
   def to_unsafe

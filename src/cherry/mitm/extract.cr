@@ -9,27 +9,27 @@ module MITM
       @closed = false
     end
 
-    def self.new(socket, extract, sync_close : Bool = true, &block)
+    def self.new(socket, extract, sync_close : Bool = true, &block : Extract ->)
       yield new socket, extract, sync_close
     end
 
-    def self.part(socket : TCPSocket, &block)
+    def self.part(socket : TCPSocket, &block : Extract ->)
       yield part socket
     end
 
     def self.part(socket : TCPSocket)
-      part! socket rescue IO::Memory.new
+      part! socket rescue IO::Memory.new 0_i32
     end
 
-    def self.part!(socket : TCPSocket, &block)
+    def self.part!(socket : TCPSocket, &block : Extract ->)
       yield part! socket
     end
 
-    def self.part!(socket : TCPSocket)
+    def self.part!(socket : TCPSocket) : IO::Memory
       buffer = uninitialized UInt8[24576_i32]
       length = socket.read buffer.to_slice
-      IO::Memory.new String
-        .new buffer.to_slice[0_i32, length]
+
+      IO::Memory.new String.new buffer.to_slice[0_i32, length]
     end
 
     def extract_eof?

@@ -85,9 +85,5 @@ module OpenSSL::X509
     def self.free(ext : LibCrypto::X509_EXTENSION)
       LibCrypto.x509_extension_free ext
     end
-
-    def free(ext : LibCrypto::X509_EXTENSION)
-      ExtensionFactory.free ext
-    end
   end
 end

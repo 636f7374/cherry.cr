@@ -34,12 +34,8 @@ class HTTP::Client
       socket.sync = false
       @socket = socket
 
-      {% unless flag?(:without_openssl) %}
-        case _tls = tls_context
-        when OpenSSL::SSL::SuperContext::Client
-          socket = OpenSSL::SSL::SuperSocket::Client.new socket, context: _tls, hostname: @host, sync_context_free: false
-          socket.skip_free = true if socket.responds_to? :skip_free=
-        when OpenSSL::SSL::Context::Client
+      {% unless flag? :without_openssl %}
+        if _tls = tls
           socket = OpenSSL::SSL::Socket::Client.new socket, context: _tls, sync_close: false, hostname: @host
         end
       {% end %}

@@ -29,11 +29,11 @@ module OpenSSL::X509
     def initialize(@cert : LibCrypto::X509)
     end
 
-    def self.new(cert : LibCrypto::X509, &block)
+    def self.new(cert : LibCrypto::X509, &block : SuperCertificate ->)
       yield new cert
     end
 
-    def self.new(sync_free : Bool = false, &block)
+    def self.new(sync_free : Bool = false, &block : SuperCertificate ->)
       cert = new
 
       begin
@@ -51,7 +51,7 @@ module OpenSSL::X509
       new LibCrypto.x509_new
     end
 
-    def self.parse(certificate : String, sync_free : Bool = false, &block)
+    def self.parse(certificate : String, sync_free : Bool = false, &block : SuperCertificate ->)
       _parse = parse certificate
 
       begin
@@ -126,7 +126,7 @@ module OpenSSL::X509
       ret = LibCrypto.x509_get_serialnumber self
       raise Error.new "X509_get_serialNumber" if ret == 0_i32
 
-      ret
+      ASN1::Integer.new ret
     end
 
     def not_before
@@ -147,14 +147,14 @@ module OpenSSL::X509
       issuer = LibCrypto.x509_get_issuer_name self
       raise Error.new "X509_get_issuer_name" if issuer.null?
 
-      SuperName.new issuer, true
+      SuperName.new issuer
     end
 
     def subject_name
       subject = LibCrypto.x509_get_subject_name self
       raise Error.new "X509_get_subject_name" if subject.null?
 
-      SuperName.new subject, true
+      SuperName.new subject
     end
 
     def extension_count
@@ -166,20 +166,22 @@ module OpenSSL::X509
 
     def extensions
       count = LibCrypto.x509_get_ext_count self
-      Array(Extension).new count do |i|
-        ext = LibCrypto.x509_get_ext self, i
+
+      Array(Extension).new count do |item|
+        ext = LibCrypto.x509_get_ext self, item
+
         Extension.new ext
       end
     end
 
     def extensions=(list : Array(LibCrypto::X509_EXTENSION))
       list.each do |item|
-        if LibCrypto.x509_add_ext(self, item, -1_i32) == 0_i32
-          extension_free item
-          raise OpenSSL::Error.new "X509_add_ext"
+        unless 0_i32 == LibCrypto.x509_add_ext self, item, -1_i32
+          next extension_free item
         end
 
         extension_free item
+        raise OpenSSL::Error.new "X509_add_ext"
       end
     end
 
@@ -199,7 +201,7 @@ module OpenSSL::X509
     end
 
     def sign(pkey : OpenSSL::PKey | LibCrypto::EVP_PKEY, algorithm = LibCrypto.evp_sha256)
-      raise OpenSSL::Error.new "X509_sign" if LibCrypto.x509_sign(self, pkey, algorithm) == 0_i32
+      raise OpenSSL::Error.new "X509_sign" if 0_i32 == LibCrypto.x509_sign self, pkey, algorithm
     end
 
     def to_io(io : IO)
@@ -211,7 +213,7 @@ module OpenSSL::X509
     def to_s
       io = IO::Memory.new
       to_io io
-      io.to_s ensure io.close
+      io.to_s
     end
 
     def subject_name=(subject : String)

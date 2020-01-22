@@ -6,7 +6,7 @@ module OpenSSL
       LibCrypto.evp_pkey_assign @pkey, OpenSSL::NID::NID_rsaEncryption, @rsa.as Pointer(Void)
     end
 
-    def self.new(size : Int = 4096_i32, sync_free : Bool = false, &block)
+    def self.new(size : Int = 4096_i32, sync_free : Bool = false, &block : RSA ->)
       rsa = new size
 
       begin
@@ -26,7 +26,6 @@ module OpenSSL
 
     def free
       RSA.free self
-      pkey_free
     end
 
     def self.free(rsa : RSA | LibCrypto::RSA)
@@ -64,10 +63,11 @@ module OpenSSL
 
     def to_io(io : IO, keyType : KeyType, cipher = nil, password = nil)
       bio = MemBIO.new
+
       case keyType
-      when KeyType::PrivateKey
+      when .private_key?
         LibCrypto.pem_write_bio_rsaprivatekey bio, self, cipher, nil, 0_i32, nil, password
-      when KeyType::PublicKey
+      when .public_key?
         LibCrypto.pem_write_bio_rsa_pubkey bio, self
       end
 
@@ -81,7 +81,7 @@ module OpenSSL
     def to_s(keyType : KeyType, cipher = nil, password = nil)
       io = IO::Memory.new
       to_io io, keyType, cipher, password
-      io.to_s ensure io.close
+      io.to_s
     end
 
     def to_s(cipher = nil, password = nil)
@@ -93,7 +93,7 @@ module OpenSSL
     end
 
     def private_key
-      return unless keyType == KeyType::All
+      return unless keyType.all?
 
       private_key!
     end
@@ -106,7 +106,7 @@ module OpenSSL
     end
 
     def public_key
-      return unless keyType == KeyType::All
+      return unless keyType.all?
 
       public_key!
     end

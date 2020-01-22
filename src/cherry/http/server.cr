@@ -30,23 +30,6 @@ class HTTP::Server
   end
 
   {% unless flag?(:without_openssl) %}
-    def bind_tls(host : String, port : Int32, certificate : String, private_key : String,
-                 write_timeout : Int32? = nil, read_timeout : Int32? = nil, reuse_port : Bool = false) : Socket::IPAddress
-      tcp_server = TCPServer.new host, port, reuse_port: reuse_port
-      read_timeout.try { |_read_timeout| tcp_server.client_read_timeout = _read_timeout }
-      write_timeout.try { |_write_timeout| tcp_server.client_write_timeout = _write_timeout }
-      server = OpenSSL::SSL::SuperServer.new tcp_server, certificate, private_key
-
-      begin
-        bind server
-      rescue exc
-        server.close
-        raise exc
-      end
-
-      tcp_server.local_address
-    end
-
     def bind_tls(host : String, port : Int32, context : OpenSSL::SSL::Context::Server,
                  write_timeout : Int32? = nil, read_timeout : Int32? = nil, reuse_port : Bool = false) : Socket::IPAddress
       tcp_server = TCPServer.new host, port, reuse_port: reuse_port
@@ -119,22 +102,10 @@ class HTTP::Server
       client.sync = false
     end
 
-    if client.responds_to? :skip_free=
-      client.skip_free = true
-    end
-
-    exception = nil
-
     begin
       @processor.process client, client
     rescue ex
       exception = ex
-    end
-
-    _client = client
-
-    if _client.responds_to? :all_free
-      _client.all_free
     end
 
     handle_exception exception if exception

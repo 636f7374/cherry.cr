@@ -1,13 +1,10 @@
 module OpenSSL::X509
   class SuperName
-    def initialize(@name : LibCrypto::X509_NAME)
+    def initialize(name : LibCrypto::X509_NAME)
+      @name = LibCrypto.x509_name_dup name
     end
 
-    def self.new(name, dup : Bool = false)
-      new dup ? LibCrypto.x509_name_dup(name) : name
-    end
-
-    def self.new(sync_free : Bool = false, &block)
+    def self.new(sync_free : Bool = false, &block : SuperName ->)
       name = new
 
       begin

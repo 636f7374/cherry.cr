@@ -3,11 +3,11 @@ module OpenSSL::X509
     def initialize(@req : LibCrypto::X509_REQ)
     end
 
-    def self.new(req : LibCrypto::X509_REQ, &block)
+    def self.new(req : LibCrypto::X509_REQ, &block : SuperRequest ->)
       yield new req
     end
 
-    def self.new(sync_free : Bool = false, &block)
+    def self.new(sync_free : Bool = false, &block : SuperRequest ->)
       req = new
 
       begin
@@ -40,7 +40,7 @@ module OpenSSL::X509
       subject = LibCrypto.x509_req_get_subject_name self
       raise OpenSSL::Error.new "X509_REQ_get_subject_name" if subject.null?
 
-      SuperName.new subject, true
+      SuperName.new subject
     end
 
     def public_key
@@ -89,7 +89,7 @@ module OpenSSL::X509
     end
 
     def sign(pkey : OpenSSL::PKey | LibCrypto::EVP_PKEY, algorithm = LibCrypto.evp_sha256)
-      raise OpenSSL::Error.new "X509_REQ_sign" if LibCrypto.x509_req_sign(self, pkey, algorithm) == 0_i32
+      raise OpenSSL::Error.new "X509_REQ_sign" if 0_i32 == LibCrypto.x509_req_sign self, pkey, algorithm
     end
 
     def subject_name=(subject : String)
@@ -134,7 +134,7 @@ module OpenSSL::X509
     def to_s
       io = IO::Memory.new
       to_io io
-      io.to_s ensure io.close
+      io.to_s
     end
 
     def to_unsafe

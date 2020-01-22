@@ -8,7 +8,7 @@ module OpenSSL
       LibCrypto.evp_pkey_assign @pkey, OpenSSL::NID::NID_dsa, @dsa.as Pointer(Void)
     end
 
-    def self.new(size : Int = 4096_i32, sync_free : Bool = false, &block)
+    def self.new(size : Int = 4096_i32, sync_free : Bool = false, &block : DSA ->)
       dsa = new size
 
       begin
@@ -24,7 +24,7 @@ module OpenSSL
 
     def self.generate(size : Int = 4096_i32)
       seed = uninitialized UInt8[20_i32]
-      raise OpenSSL::Error.new if LibCrypto.rand_bytes(seed.to_slice, 20_i32) == 0_i32
+      raise OpenSSL::Error.new if 0_i32 == LibCrypto.rand_bytes seed.to_slice, 20_i32
 
       dsa_key = LibCrypto.dsa_generate_parameters size, seed
         .to_slice, 20_i32, out counter, out h, nil, nil
@@ -39,7 +39,6 @@ module OpenSSL
 
     def free
       DSA.free self
-      pkey_free
     end
 
     def self.free(dsa : DSA | LibCrypto::DSA)
@@ -66,6 +65,7 @@ module OpenSSL
     def self.parse_private_key(private_key : String, password = nil)
       bio = MemBIO.new
       bio.write private_key
+
       dsa_key = LibCrypto.pem_read_bio_dsaprivatekey bio, nil, nil, password
       raise OpenSSL::Error.new "PEM_write_bio_DSAPrivateKey" if dsa_key.null?
 
@@ -76,9 +76,9 @@ module OpenSSL
       bio = MemBIO.new
 
       case keyType
-      when KeyType::PrivateKey
+      when .private_key?
         LibCrypto.pem_write_bio_dsaprivatekey bio, self, cipher, nil, 0_i32, nil, password
-      when KeyType::PublicKey
+      when .public_key?
         LibCrypto.pem_write_bio_dsa_pubkey bio, self
       end
 
@@ -92,7 +92,7 @@ module OpenSSL
     def to_s(keyType : KeyType, cipher = nil, password = nil)
       io = IO::Memory.new
       to_io io, keyType, cipher, password
-      io.to_s ensure io.close
+      io.to_s
     end
 
     def to_s(cipher = nil, password = nil)
@@ -104,7 +104,7 @@ module OpenSSL
     end
 
     def private_key
-      return unless keyType == KeyType::All
+      return unless keyType.all?
 
       private_key!
     end
@@ -115,7 +115,7 @@ module OpenSSL
     end
 
     def public_key
-      return unless keyType == KeyType::All
+      return unless keyType.all?
 
       public_key!
     end

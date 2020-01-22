@@ -138,14 +138,14 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
   end
 
   def unbuffered_read(slice : Bytes)
-    return 0_i32 if freed? || closed?
+    return 0_u8 if freed? || closed?
     check_open
 
     count = slice.size
-    return 0_i32 if count == 0_i32
+    return 0_u8 if count == 0_u8
 
     LibSSL.ssl_read(@ssl, slice.to_unsafe, count).tap do |bytes|
-      if bytes <= 0_i32 && !LibSSL.ssl_get_error(@ssl, bytes).zero_return?
+      if bytes <= 0_u8 && !LibSSL.ssl_get_error(@ssl, bytes).zero_return?
         begin
           raise OpenSSL::SSL::Error.new @ssl, bytes, "SSL_read"
         rescue ex
@@ -167,7 +167,7 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
     count = slice.size
     bytes = LibSSL.ssl_write @ssl, slice.to_unsafe, count
 
-    unless bytes > 0_i32
+    unless bytes > 0_u8
       begin
         raise OpenSSL::SSL::Error.new @ssl, bytes, "SSL_write"
       rescue ex
