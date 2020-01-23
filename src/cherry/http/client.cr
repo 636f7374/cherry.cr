@@ -35,7 +35,7 @@ class HTTP::Client
       @socket = socket
 
       {% unless flag? :without_openssl %}
-        if _tls = tls
+        if _tls = tls_context
           socket = OpenSSL::SSL::Socket::Client.new socket, context: _tls, sync_close: false, hostname: @host
         end
       {% end %}
