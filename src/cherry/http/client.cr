@@ -8,7 +8,7 @@ class HTTP::Client
   end
 
   def io_socket
-    socket
+    @socket
   end
 
   def tls_context
@@ -28,15 +28,15 @@ class HTTP::Client
 
     begin
       hostname = @host.starts_with?('[') && @host.ends_with?(']') ? @host[1_i32..-2_i32] : @host
-      socket = create_socket hostname
 
+      socket = create_socket hostname
       socket.read_timeout = @read_timeout if @read_timeout
       socket.sync = false
       @socket = socket
 
       {% unless flag? :without_openssl %}
         if _tls = tls_context
-          socket = OpenSSL::SSL::Socket::Client.new socket, context: _tls, sync_close: false, hostname: @host
+          socket = OpenSSL::SSL::Socket::Client.new socket, context: _tls, sync_close: true, hostname: @host
         end
       {% end %}
 
