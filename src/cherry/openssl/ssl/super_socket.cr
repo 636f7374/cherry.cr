@@ -138,14 +138,14 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
   end
 
   def unbuffered_read(slice : Bytes)
-    return 0_u8 if freed? || closed?
+    return 0_i32 if freed? || closed?
     check_open
 
     count = slice.size
-    return 0_u8 if count == 0_u8
+    return 0_i32 if count == 0_i32
 
     LibSSL.ssl_read(@ssl, slice.to_unsafe, count).tap do |bytes|
-      if bytes <= 0_u8 && !LibSSL.ssl_get_error(@ssl, bytes).zero_return?
+      if bytes <= 0_i32 && !LibSSL.ssl_get_error(@ssl, bytes).zero_return?
         begin
           raise OpenSSL::SSL::Error.new @ssl, bytes, "SSL_read"
         rescue ex
@@ -167,7 +167,7 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
     count = slice.size
     bytes = LibSSL.ssl_write @ssl, slice.to_unsafe, count
 
-    unless bytes > 0_u8
+    unless bytes > 0_i32
       begin
         raise OpenSSL::SSL::Error.new @ssl, bytes, "SSL_write"
       rescue ex
@@ -190,7 +190,33 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
   def unbuffered_close
     return if freed? || closed?
     @closed = true
-    @io.close
+
+    begin
+      loop do
+        begin
+          ret = LibSSL.ssl_shutdown @ssl
+          break if ret == 1_i32                # done bidirectional
+          break if ret == 0_i32 && sync_close? # done unidirectional, "this first successful call to SSL_shutdown() is sufficient"
+          raise OpenSSL::SSL::Error.new @ssl, ret, "SSL_shutdown" if ret < 0_i32
+        rescue ex : OpenSSL::SSL::Error
+          case ex.error
+          when .want_read?, .want_write?
+            # Ignore, shutdown did not complete yet
+          when .syscall?
+            # OpenSSL claimed an underlying syscall failed, but that didn't set any error state,
+            # assume we're done
+            break
+          else
+            raise ex
+          end
+        end
+
+        # ret == 0, retry, shutdown is not complete yet
+      end
+    rescue IO::Error | Errno
+    ensure
+      @bio.io.close if @sync_close
+    end
   end
 
   def unbuffered_rewind

@@ -19,11 +19,11 @@ module MITM
       @hostName = String.new
     end
 
-    def self.new(&block)
+    def self.new(&block : Context ->)
       yield new
     end
 
-    def self.from_path(rootCertificate : String, rootPrivateKey : String, &block)
+    def self.from_path(rootCertificate : String, rootPrivateKey : String, &block : Context ->)
       yield from_path rootCertificate, rootPrivateKey
     end
 
@@ -31,7 +31,7 @@ module MITM
       new File.read(rootCertificate), File.read(rootPrivateKey)
     end
 
-    def create_client(verify_mode = OpenSSL::SSL::VerifyMode::NONE, &block)
+    def create_client(verify_mode = OpenSSL::SSL::VerifyMode::NONE, &block : Context ->)
       yield create_client verify_mode
     end
 
@@ -41,7 +41,7 @@ module MITM
       client
     end
 
-    def create_server(request : HTTP::Request, &block)
+    def create_server(request : HTTP::Request, &block : Context ->)
       yield create_server request
     end
 
@@ -49,7 +49,7 @@ module MITM
       create_context request
     end
 
-    def create_all(request : HTTP::Request, verify_mode = OpenSSL::SSL::VerifyMode::NONE, &block)
+    def create_all(request : HTTP::Request, verify_mode = OpenSSL::SSL::VerifyMode::NONE, &block : Context ->)
       return unless server = create_server request
       return unless client = create_client verify_mode
 
