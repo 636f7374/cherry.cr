@@ -69,19 +69,19 @@ class HTTP::Client
   end
 
   def close
-    return unless _socket = @socket
-
-    _socket.close
+    @socket.try &.close rescue nil
+    tcp_socket.try &.close rescue nil
   end
 
   def cleanup
+    close
+
     case _socket = @socket
     when OpenSSL::SSL::SuperSocket::Client
-      _socket.close rescue nil
-
       _socket.all_free
     else
-      _socket.try &.close rescue nil
+      context = tls_context
+      context.free if context.is_a? OpenSSL::SSL::SuperContext::Client
     end
 
     @socket = nil
@@ -127,11 +127,7 @@ class HTTP::Client
 
       @socket = socket
     rescue ex
-      tcp_socket.try &.close
-
-      _socket = socket
-      _socket.context_free if _socket.is_a? OpenSSL::SSL::SuperSocket::Client
-      @socket = nil
+      cleanup
 
       raise ex
     end
