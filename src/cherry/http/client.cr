@@ -80,8 +80,8 @@ class HTTP::Client
     when OpenSSL::SSL::SuperSocket::Client
       _socket.all_free
     else
-      context = tls_context
-      context.free if context.is_a? OpenSSL::SSL::SuperContext::Client
+      _context = tls_context
+      _context.free if _context.is_a? OpenSSL::SSL::SuperContext::Client
     end
 
     @socket = nil
@@ -89,9 +89,8 @@ class HTTP::Client
 
   def create_socket(hostname : String)
     return TCPSocket.new hostname, @port, @dns_timeout, @connect_timeout unless resolver = dns_resolver
-    return TCPSocket.new hostname, @port, @dns_timeout, @connect_timeout unless resolver.is_a? Durian::Resolver
 
-    TCPSocket.new hostname, @port, @dns_timeout, @connect_timeout
+    TCPSocket.connect hostname, @port, resolver, @connect_timeout
   end
 
   def tcp_socket=(value : TCPSocket)
