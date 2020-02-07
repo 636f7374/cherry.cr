@@ -85,6 +85,7 @@ class HTTP::Client
     end
 
     @socket = nil
+    @tls = nil
   end
 
   def create_socket(hostname : String)
