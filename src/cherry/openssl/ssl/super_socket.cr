@@ -67,12 +67,7 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
     @freed = false
     @closed = false
 
-    begin
-      raise OpenSSL::Error.new "SSL_new" if context.freed?
-    rescue ex
-      raise ex
-    end
-
+    raise OpenSSL::Error.new "SSL_new" if context.freed?
     @ssl = LibSSL.ssl_new context
 
     begin
@@ -93,14 +88,6 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
     LibSSL.ssl_set_bio @ssl, @bio, @bio
   end
 
-  def skip_free=(value : Bool)
-    @skip_free = value
-  end
-
-  def skip_free?
-    @skip_free
-  end
-
   def context_free
     @context.free
   end
@@ -119,6 +106,7 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
 
   def free
     return if freed?
+
     free!
   end
 
@@ -135,88 +123,6 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
   def all_free!
     context_free!
     free!
-  end
-
-  def unbuffered_read(slice : Bytes)
-    return 0_i32 if freed? || closed?
-    check_open
-
-    count = slice.size
-    return 0_i32 if count == 0_i32
-
-    LibSSL.ssl_read(@ssl, slice.to_unsafe, count).tap do |bytes|
-      if bytes <= 0_i32 && !LibSSL.ssl_get_error(@ssl, bytes).zero_return?
-        begin
-          raise OpenSSL::SSL::Error.new @ssl, bytes, "SSL_read"
-        rescue ex
-          unless skip_free?
-            @sync_context_free ? all_free : free
-          end
-
-          raise ex
-        end
-      end
-    end
-  end
-
-  def unbuffered_write(slice : Bytes)
-    return if freed? || closed?
-    check_open
-    return if slice.empty?
-
-    count = slice.size
-    bytes = LibSSL.ssl_write @ssl, slice.to_unsafe, count
-
-    unless bytes > 0_i32
-      begin
-        raise OpenSSL::SSL::Error.new @ssl, bytes, "SSL_write"
-      rescue ex
-        unless skip_free?
-          @sync_context_free ? all_free : free
-        end
-
-        raise ex
-      end
-    end
-
-    nil
-  end
-
-  def unbuffered_flush
-    return if freed? || closed?
-    @bio.io.flush
-  end
-
-  def unbuffered_close
-    return if freed? || closed?
-    @closed = true
-
-    begin
-      loop do
-        begin
-          ret = LibSSL.ssl_shutdown @ssl
-          break if ret == 1_i32                # done bidirectional
-          break if ret == 0_i32 && sync_close? # done unidirectional, "this first successful call to SSL_shutdown() is sufficient"
-          raise OpenSSL::SSL::Error.new @ssl, ret, "SSL_shutdown" if ret < 0_i32
-        rescue ex : OpenSSL::SSL::Error
-          case ex.error
-          when .want_read?, .want_write?
-            # Ignore, shutdown did not complete yet
-          when .syscall?
-            # OpenSSL claimed an underlying syscall failed, but that didn't set any error state,
-            # assume we're done
-            break
-          else
-            raise ex
-          end
-        end
-
-        # ret == 0, retry, shutdown is not complete yet
-      end
-    rescue IO::Error | Errno
-    ensure
-      @bio.io.close if @sync_close
-    end
   end
 
   def unbuffered_rewind

@@ -119,7 +119,6 @@ class HTTP::Client
         case _tls = tls_context
         when OpenSSL::SSL::SuperContext::Client
           socket = OpenSSL::SSL::SuperSocket::Client.new socket, context: _tls, hostname: @host, sync_context_free: false
-          socket.skip_free = true if socket.responds_to? :skip_free=
         when OpenSSL::SSL::Context::Client
           socket = OpenSSL::SSL::Socket::Client.new socket, context: _tls, sync_close: true, hostname: @host
         end

@@ -33,16 +33,6 @@ module OpenSSL::X509
       yield new cert
     end
 
-    def self.new(sync_free : Bool = false, &block : SuperCertificate ->)
-      cert = new
-
-      begin
-        yield cert
-      ensure
-        cert.free
-      end
-    end
-
     def self.new
       generate
     end
