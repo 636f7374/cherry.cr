@@ -39,12 +39,12 @@
     * Integer: Certificate serial number, very useful.
     * Time: Certificate validity period, very useful.
   * Bio (MemBIO)
-    * MemBIO: OpenSSL memory buffer, Making certificate it is essential.
+    * MemBIO: OpenSSL memory buffer, Essential when making Certificate / (Private / Public) keys.
   * Nid
-    * Certificate subject id flag, Making certificate it is essential.
+    * Certificate subject id flag, Essential when making Certificate.
     * NID: (I.e. `subject_alt_name`, `ext_usage`, `usage`).
   * Pkey (PKey, DSA, RSA)
-    * (Create / Read) Public / Private Key is Essential.
+    * Essential when (create / read) Public / Private Key.
     * I encountered a memory leak problem here, it has been fixed.
   * SSL (Context, Server, SuperContext, SuperSocket)
     * Context: Support loading certificate / private key files from memory (with garbage collection).
@@ -67,8 +67,8 @@
 
 * HTTP
   * Client
-    * All of these, You need to manually free the memory allocation.
     * If you use `SuperContext` as `Context`, it will use `SuperSocket`.
+    * All of these, You need to manually free the memory allocation.
 
 ## Tips
 
