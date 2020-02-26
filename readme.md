@@ -46,41 +46,40 @@
   * Pkey (PKey, DSA, RSA)
     * (Create / Read) Public / Private Key is Essential.
     * I encountered a memory leak problem here, it has been fixed.
-  * SSL (Context, Server, SuperContext, SuperServer, SuperSocket)
+  * SSL (Context, Server, SuperContext, SuperSocket)
     * Context: Support loading certificate / private key files from memory (with garbage collection).
-    * Server: Added control over read and write timeouts to prevent HTTP slow read attacks.
-    * SuperContext: Struct is used internally, without finalizer, need improvement here.
-    * SuperServer: For without finalizer, (E.g. accept client, timeout, ...) features.
-    * SuperSocket: without finalizer, Save memory usage
-    * SuperSocket Previously had an issue with Invalid Memory Address, it has been fixed.
+    * Super\*: Slightly complicated but worth it, low memory usage.
+    * SuperContext: You need to manually free the memory allocation.
+    * SuperSocket: You need to manually free the memory allocation.
   * X509 (ExtensionFactory, Request, SuperCertificate, SuperName).
     * ExtensionFactory: Certificate Subject Add / Remove, very important.
-    * Request: I don't seem to use it, but I also made
-    * SuperCertificate: without finalizer, Generate certificate requires it.
+    * Request: I don't seem to use it, but I also made.
+    * SuperCertificate: You need to manually free the memory allocation, Generate certificate requires it.
+    * SuperName: You need to manually free the memory allocation.
     * SuperName: `issuer_name`, `subject_name`, Generate certificate requires it.
 
 * MITM
-  * Client: Without finalizer, Wrapper for `SuperSocket::Client`.
+  * Mitm Slightly complicated but worth it, low memory usage.
+  * Client: Wrapper for `SuperSocket::Client`.
+  * Server: Wrapper for `SuperSocket::Server`.
   * Context: Convenient and fast certificate generation, for Man-in-the-middle.
-  * Extract: For HTTP Proxy, you need to extract a part to verify whether it is an HTTPS connection.
-  * Server: Without finalizer, Wrapper for `SuperSocket::Server`.
+  * All of these, You need to manually free the memory allocation.
 
 * HTTP
   * Client
-    * For using HTTP::Client, you can connect via SuperSocket.
-    * Using SuperSocket without finalizer.
-  * Server
-    * For using HTTP::Server, you can receive via SuperServer.
-    * Using SuperSocket without finalizer.
+    * All of these, You need to manually free the memory allocation.
+    * If you use `SuperContext` as `Context`, it will use `SuperSocket`.
 
 ## Tips
 
 * This project is currently in WIP (Work In Progress), it may have some undiscovered problems.
-* Being separated from [Stdlib.cr](https://github.com/636f7374/stdlib.cr), fixing these problems may take 3-7 days.
 * This repository contains OpenSSL and Network components.
   * Crystal network components are highly integrated with OpenSSL.
 * Why use `Super_*`?
-  * By using `Super_ *`, you can reduce memory usage, without the problem of memory leaks.
+  * By using `Super_ *`, you can reduce memory usage, You don't want your application to take up too much memory.
+  * But you have to manage the memory manually, please free the memory allocation manually when you don't need it.
+  * If you free the same memory multiple times, your program will crash.
+  * When using `Fiber`, please use it with `Channel` (It will protect you from free the same memory multiple times).
 * `Travis-CI` appears to be malfunctioning and this repository cannot be detected.
 
 ## Next
@@ -91,7 +90,7 @@
 * [ ] ...
 
 
-## Using
+## Usage
 
 * Please refer to the Spec file.
 
