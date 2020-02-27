@@ -81,6 +81,7 @@
   * If you free the same memory multiple times, your program will crash.
   * When using `Fiber`, please use it with `Channel` (It will protect you from free the same memory multiple times).
 * `Travis-CI` appears to be malfunctioning and this repository cannot be detected.
+* For a better future of the project, I decided to change the `MIT` license to the `GPLv3` license.
 
 ## Next
 
@@ -236,4 +237,4 @@ $ make test
 
 ## License
 
-* MIT License
+* GPLv3 License
