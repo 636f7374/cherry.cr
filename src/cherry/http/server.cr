@@ -57,10 +57,11 @@ class HTTP::Server
   end
 
   private def accept!(server : Socket::Server)
-    while socket = server.accept?
-      next unless client = socket
+    socket = server.accept?
 
-      spawn handle_client server, client
+    spawn do
+      next unless client = socket
+      handle_client server, client
     end
   end
 
@@ -97,10 +98,7 @@ class HTTP::Server
 
   private def handle_client(server, client : IO)
     set_socket_timeout server, client
-
-    if client.is_a? IO::Buffered
-      client.sync = false
-    end
+    client.sync = false if client.is_a? IO::Buffered
 
     begin
       @processor.process client, client
