@@ -31,11 +31,11 @@ module MITM
       new File.read(rootCertificate), File.read(rootPrivateKey)
     end
 
-    def create_client(verify_mode = OpenSSL::SSL::VerifyMode::NONE, &block : Context ->)
+    def self.create_client(verify_mode = OpenSSL::SSL::VerifyMode::NONE, &block : Context ->)
       yield create_client verify_mode
     end
 
-    def create_client(verify_mode = OpenSSL::SSL::VerifyMode::NONE)
+    def self.create_client(verify_mode = OpenSSL::SSL::VerifyMode::NONE)
       client = OpenSSL::SSL::SuperContext::Client.new
       client.verify_mode = verify_mode
       client
@@ -51,7 +51,7 @@ module MITM
 
     def create_all(request : HTTP::Request, verify_mode = OpenSSL::SSL::VerifyMode::NONE, &block : Context ->)
       return unless server = create_server request
-      return unless client = create_client verify_mode
+      return unless client = Context.create_client verify_mode
 
       yield client, server
     end
