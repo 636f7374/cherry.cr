@@ -1,6 +1,6 @@
 module MITM
   class Client
-    def self.upgrade(io : TCPSocket, context : MITM::Context, hostname : String? = nil)
+    def self.upgrade(io : IO, context : MITM::Context, hostname : String? = nil)
       return io unless client_context = context.create_client
 
       upgrade = OpenSSL::SSL::SuperSocket::Client.new io: io,
