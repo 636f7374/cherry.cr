@@ -237,4 +237,4 @@ $ make test
 
 ## License
 
-* GPLv3 License
+* MIT License
