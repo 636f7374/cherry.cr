@@ -7,7 +7,6 @@ module MITM
         context: server_context, sync_context_free: false rescue nil
 
       server_context.free unless upgrade
-      upgrade.sync = true if upgrade
 
       upgrade || socket
     end

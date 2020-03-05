@@ -7,7 +7,6 @@ module MITM
         sync_context_free: false, hostname: hostname rescue nil
 
       client_context.free unless upgrade
-      upgrade.sync = true if upgrade
 
       upgrade || io
     end
