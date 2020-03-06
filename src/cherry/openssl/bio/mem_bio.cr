@@ -32,7 +32,7 @@ class OpenSSL::MemBIO < IO
   def to_s
     io = IO::Memory.new
     to_io io
-    io.to_s
+    String.new io.to_slice
   end
 
   def finalize

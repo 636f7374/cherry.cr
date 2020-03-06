@@ -61,6 +61,7 @@ class HTTP::Server
 
     spawn do
       next unless client = socket
+
       handle_client server, client
     end
   end

@@ -92,7 +92,7 @@ module OpenSSL
     def to_s(keyType : KeyType, cipher = nil, password = nil)
       io = IO::Memory.new
       to_io io, keyType, cipher, password
-      io.to_s
+      String.new io.to_slice
     end
 
     def to_s(cipher = nil, password = nil)

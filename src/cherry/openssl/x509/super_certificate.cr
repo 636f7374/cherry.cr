@@ -54,6 +54,7 @@ module OpenSSL::X509
     def self.parse(certificate : String)
       bio = MemBIO.new
       bio.write certificate
+
       x509 = LibCrypto.pem_read_bio_x509 bio, nil, nil, nil
 
       new x509
@@ -203,7 +204,7 @@ module OpenSSL::X509
     def to_s
       io = IO::Memory.new
       to_io io
-      io.to_s
+      String.new io.to_slice
     end
 
     def subject_name=(subject : String)

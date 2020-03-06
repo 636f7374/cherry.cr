@@ -2,15 +2,16 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
   getter? io : IO
 
   class Client < SuperSocket
-    def initialize(io, context : SuperContext::Client = SuperContext::Client.new, sync_context_free : Bool = true, hostname : String? = nil)
-      super io, context, sync_context_free
+    def initialize(io, context : SuperContext::Client = SuperContext::Client.new, hostname : String? = nil)
+      super io, context
 
       begin
         set_hostname hostname: hostname
         ret = LibSSL.ssl_connect @ssl
         raise OpenSSL::SSL::Error.new @ssl, ret, "SSL_connect" unless ret == 1_i32
       rescue ex
-        sync_context_free ? all_free : free
+        all_free
+
         raise ex
       end
     end
@@ -18,6 +19,7 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
     private def set_hostname(hostname : String? = nil)
       if hostname
         # Macro from OpenSSL: SSL_ctrl(s,SSL_CTRL_SET_TLSEXT_HOSTNAME,TLSEXT_NAMETYPE_host_name,(char *)name)
+
         LibSSL.ssl_ctrl(
           @ssl,
           LibSSL::SSLCtrl::SET_TLSEXT_HOSTNAME,
@@ -49,20 +51,21 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
   end
 
   class Server < SuperSocket
-    def initialize(io, context : SuperContext::Server = SuperContext::Server.new, sync_context_free : Bool = true)
-      super io, context, sync_context_free
+    def initialize(io, context : SuperContext::Server = SuperContext::Server.new)
+      super io, context
 
       begin
         ret = LibSSL.ssl_accept @ssl
         raise OpenSSL::SSL::Error.new @ssl, ret, "SSL_accept" unless ret == 1_i32
       rescue ex
-        sync_context_free ? all_free : free
+        all_free
+
         raise ex
       end
     end
   end
 
-  protected def initialize(@io, @context : SuperContext, @sync_context_free : Bool = true)
+  protected def initialize(@io, @context : SuperContext)
     @sync_close = true
     @freed = false
     @closed = false
@@ -73,7 +76,8 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
     begin
       raise OpenSSL::Error.new "SSL_new" unless @ssl
     rescue ex
-      sync_context_free ? all_free : free
+      all_free
+
       raise ex
     end
 

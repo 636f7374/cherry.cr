@@ -118,7 +118,7 @@ class HTTP::Client
       {% unless flag? :without_openssl %}
         case _tls = tls_context
         when OpenSSL::SSL::SuperContext::Client
-          socket = OpenSSL::SSL::SuperSocket::Client.new socket, context: _tls, hostname: @host, sync_context_free: false
+          socket = OpenSSL::SSL::SuperSocket::Client.new socket, context: _tls, hostname: @host
         when OpenSSL::SSL::Context::Client
           socket = OpenSSL::SSL::Socket::Client.new socket, context: _tls, sync_close: true, hostname: @host
         end

@@ -134,7 +134,7 @@ module OpenSSL::X509
     def to_s
       io = IO::Memory.new
       to_io io
-      io.to_s
+      String.new io.to_slice
     end
 
     def to_unsafe

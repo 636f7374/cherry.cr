@@ -63,6 +63,7 @@ module OpenSSL
     def self.parse_private_key(private_key : String, password = nil)
       bio = MemBIO.new
       bio.write private_key
+
       pkey = LibCrypto.pem_read_bio_privatekey bio, nil, nil, password
 
       new pkey, KeyType::PrivateKey
