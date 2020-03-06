@@ -2,15 +2,15 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
   getter? io : IO
 
   class Client < SuperSocket
-    def initialize(io, context : SuperContext::Client = SuperContext::Client.new, hostname : String? = nil)
-      super io, context
+    def initialize(io, context : SuperContext::Client = SuperContext::Client.new, sync_context_free : Bool = true, hostname : String? = nil)
+      super io, context, sync_context_free
 
       begin
         set_hostname hostname: hostname
         ret = LibSSL.ssl_connect @ssl
         raise OpenSSL::SSL::Error.new @ssl, ret, "SSL_connect" unless ret == 1_i32
       rescue ex
-        all_free
+        sync_context_free ? all_free : free
 
         raise ex
       end
@@ -51,21 +51,21 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
   end
 
   class Server < SuperSocket
-    def initialize(io, context : SuperContext::Server = SuperContext::Server.new)
-      super io, context
+    def initialize(io, context : SuperContext::Server = SuperContext::Server.new, sync_context_free : Bool = true)
+      super io, context, sync_context_free
 
       begin
         ret = LibSSL.ssl_accept @ssl
         raise OpenSSL::SSL::Error.new @ssl, ret, "SSL_accept" unless ret == 1_i32
       rescue ex
-        all_free
+        sync_context_free ? all_free : free
 
         raise ex
       end
     end
   end
 
-  protected def initialize(@io, @context : SuperContext)
+  protected def initialize(@io, @context : SuperContext, @sync_context_free : Bool = true)
     @sync_close = true
     @freed = false
     @closed = false
@@ -76,7 +76,7 @@ abstract class OpenSSL::SSL::SuperSocket < OpenSSL::SSL::Socket
     begin
       raise OpenSSL::Error.new "SSL_new" unless @ssl
     rescue ex
-      all_free
+      sync_context_free ? all_free : free
 
       raise ex
     end
