@@ -41,16 +41,6 @@ module OpenSSL::X509
       new LibCrypto.x509_new
     end
 
-    def self.parse(certificate : String, sync_free : Bool = false, &block : SuperCertificate ->)
-      _parse = parse certificate
-
-      begin
-        yield _parse
-      ensure
-        _parse.free if sync_free
-      end
-    end
-
     def self.parse(certificate : String)
       bio = MemBIO.new
       bio.write certificate
@@ -199,6 +189,8 @@ module OpenSSL::X509
       bio = OpenSSL::MemBIO.new
       LibCrypto.pem_write_bio_x509 bio, self
       bio.to_io io
+
+      io
     end
 
     def to_s

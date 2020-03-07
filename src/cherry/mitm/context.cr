@@ -5,6 +5,7 @@ module MITM
 
     getter rootCertificate : String
     getter rootPrivateKey : String
+    property cache : Cache
     property country : String
     property location : String
     property notBefore : Int64
@@ -12,6 +13,7 @@ module MITM
     property hostName : String
 
     def initialize(@rootCertificate, @rootPrivateKey)
+      @cache = Cache.new
       @country = "FI"
       @location = "Helsinki"
       @notBefore = -1_i64
@@ -62,7 +64,25 @@ module MITM
       create_context host
     end
 
+    def create_context_from_cache(value : Tuple(String, String))
+      certificate, private_key = value
+
+      _certificate = OpenSSL::X509::SuperCertificate.parse certificate
+      _private_key = OpenSSL::PKey.parse_private_key private_key
+
+      server = OpenSSL::SSL::SuperContext::Server.new
+      server.ca_certificate_text = _certificate
+      server.private_key_text = _private_key
+
+      _certificate.free ensure _private_key.free
+
+      server
+    end
+
     def create_context(hostname : String = self.hostName)
+      _cache = cache.get hostname
+      return create_context_from_cache _cache if _cache
+
       root_certificate = OpenSSL::X509::SuperCertificate.parse rootCertificate
       root_private_key = OpenSSL::PKey.parse_private_key rootPrivateKey
       rsa = OpenSSL::PKey::RSA.new 2048_i32
@@ -99,7 +119,7 @@ module MITM
         ]),
       ]
 
-      certificate.sign root_private_key.pkey
+      certificate.sign root_private_key
       issuer_name.free ensure x509_name.free
       root_certificate.free ensure root_private_key.free
 
@@ -107,6 +127,7 @@ module MITM
       server.ca_certificate_text = certificate
       server.private_key_text = rsa.pkey
 
+      cache.set hostname, Tuple.new certificate.to_s, rsa.to_s OpenSSL::PKey::KeyType::PrivateKey
       certificate.free ensure rsa.pkey_free
 
       server

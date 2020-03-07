@@ -6,16 +6,6 @@ module OpenSSL
       LibCrypto.evp_pkey_assign @pkey, OpenSSL::NID::NID_rsaEncryption, @rsa.as Pointer(Void)
     end
 
-    def self.new(size : Int = 4096_i32, sync_free : Bool = false, &block : RSA ->)
-      rsa = new size
-
-      begin
-        yield rsa
-      ensure
-        rsa.pkey_free if sync_free
-      end
-    end
-
     def self.new(size : Int = 4096_i32)
       generate size
     end
@@ -49,8 +39,11 @@ module OpenSSL
     end
 
     def self.parse_public_key(public_key : String, password = nil)
-      pkey = RSA.parse_public_key public_key, password
-      pkey.to_rsa
+      bio = MemBIO.new
+      bio.write public_key
+      rsa_key = LibCrypto.pem_read_bio_rsapublickey bio, nil, nil, password
+
+      new rsa_key, KeyType::PublicKey
     end
 
     def self.parse_private_key(private_key : String, password = nil)
@@ -72,6 +65,8 @@ module OpenSSL
       end
 
       bio.to_io io
+
+      io
     end
 
     def to_io(io : IO, cipher = nil, password = nil)

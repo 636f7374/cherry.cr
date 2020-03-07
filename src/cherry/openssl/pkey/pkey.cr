@@ -32,32 +32,12 @@ module OpenSSL
       @pkey = pkey
     end
 
-    def self.parse_public_key(public_key : String, password = nil, sync_free : Bool = false, &block)
-      _parse = parse_public_key public_key, password
-
-      begin
-        yield _parse
-      ensure
-        _parse.free if sync_free
-      end
-    end
-
     def self.parse_public_key(public_key : String, password = nil)
       bio = MemBIO.new
       bio.write public_key
       pkey = LibCrypto.pem_read_bio_pubkey bio, nil, nil, password
 
       new pkey, KeyType::PublicKey
-    end
-
-    def self.parse_private_key(private_key : String, password = nil, sync_free : Bool = false, &block)
-      _parse = parse_private_key private_key, password
-
-      begin
-        yield _parse
-      ensure
-        _parse.free if sync_free
-      end
     end
 
     def self.parse_private_key(private_key : String, password = nil)

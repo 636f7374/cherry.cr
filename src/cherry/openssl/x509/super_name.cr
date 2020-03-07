@@ -4,16 +4,6 @@ module OpenSSL::X509
       @name = LibCrypto.x509_name_dup name
     end
 
-    def self.new(sync_free : Bool = false, &block : SuperName ->)
-      name = new
-
-      begin
-        yield name
-      ensure
-        name.free if sync_free
-      end
-    end
-
     def self.new
       new LibCrypto.x509_name_new
     end

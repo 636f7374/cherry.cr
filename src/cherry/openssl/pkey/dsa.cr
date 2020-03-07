@@ -8,21 +8,11 @@ module OpenSSL
       LibCrypto.evp_pkey_assign @pkey, OpenSSL::NID::NID_dsa, @dsa.as Pointer(Void)
     end
 
-    def self.new(size : Int = 4096_i32, sync_free : Bool = false, &block : DSA ->)
-      dsa = new size
-
-      begin
-        yield dsa
-      ensure
-        dsa.pkey_free if sync_free
-      end
-    end
-
     def self.new(size : Int = 4096_i32)
       generate size
     end
 
-    def self.generate(size : Int = 4096_i32)
+    def self.generate(size : Int = 4096_i32) : DSA
       seed = uninitialized UInt8[20_i32]
       raise OpenSSL::Error.new if 0_i32 == LibCrypto.rand_bytes seed.to_slice, 20_i32
 
@@ -30,7 +20,7 @@ module OpenSSL
         .to_slice, 20_i32, out counter, out h, nil, nil
       raise OpenSSL::Error.new unless dsa_key
 
-      if LibCrypto.dsa_generate_key(dsa_key) == 0_i32
+      if 0_i32 == LibCrypto.dsa_generate_key dsa_key
         LibCrypto.dsa_free dsa_key ensure raise OpenSSL::Error.new
       end
 
@@ -83,6 +73,8 @@ module OpenSSL
       end
 
       bio.to_io io
+
+      io
     end
 
     def to_io(io : IO, cipher = nil, password = nil)
