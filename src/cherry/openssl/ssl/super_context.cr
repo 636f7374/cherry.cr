@@ -5,22 +5,6 @@ abstract class OpenSSL::SSL::SuperContext < OpenSSL::SSL::Context
     def self.new
       new SuperContext.default_method
     end
-
-    protected def set_cert_verify_callback(hostname : String)
-      # Sanitize the hostname with PunyCode
-      hostname = URI::Punycode.to_ascii hostname
-
-      # Keep a reference so the GC doesn't collect it after sending it to C land
-      @hostname = hostname
-      LibSSL.ssl_ctx_set_cert_verify_callback(@handle, ->(x509_ctx, arg) {
-        if LibCrypto.x509_verify_cert(x509_ctx) != 0_i32
-          cert = LibCrypto.x509_store_ctx_get_current_cert(x509_ctx)
-          HostnameValidation.validate_hostname(arg.as(String), cert) == HostnameValidation::Result::MatchFound ? 1_i32 : 0_i32
-        else
-          0_i32
-        end
-      }, hostname.as(Void*))
-    end
   end
 
   class Server < SuperContext
@@ -30,14 +14,10 @@ abstract class OpenSSL::SSL::SuperContext < OpenSSL::SSL::Context
 
     # Set the CA certificate by string, in PEM format, used to
     # validate the peers certificate.
-    def set_ca_certificate_text(certificate : String, sync_free : Bool = false)
+    def ca_certificate_text=(certificate : String)
       certificate = OpenSSL::X509::SuperCertificate.parse certificate
 
-      begin
-        self.ca_certificate_text = certificate
-      ensure
-        certificate.free if sync_free
-      end
+      self.ca_certificate_text = certificate ensure certificate.free
     end
 
     # Set the CA certificate by string, in PEM format, used to
@@ -47,14 +27,10 @@ abstract class OpenSSL::SSL::SuperContext < OpenSSL::SSL::Context
       raise OpenSSL::Error.new "SSL_CTX_use_certificate" unless ret == 1_i32
     end
 
-    def set_private_key_text(private_key : String, sync_free : Bool = false)
+    def private_key_text=(private_key : String)
       parse = OpenSSL::PKey.parse_private_key private_key
 
-      begin
-        self.private_key_text = parse
-      ensure
-        parse.free if sync_free
-      end
+      self.private_key_text = parse ensure parse.free
     end
 
     # Set the private key by string, The key must in PEM format.
