@@ -16,11 +16,8 @@ module OpenSSL::X509
     end
 
     def alt_name_merge(domains : Array(String))
-      domains.map do |domain|
-        String.build do |io|
-          io << "DNS:" << domain
-        end
-      end.join ", "
+      modified = domains.map { |domain| String.build { |io| io << "DNS:" << domain } }
+      modified.join ", "
     end
 
     def create_subject_alt_name(domains : Array(String))
@@ -32,9 +29,8 @@ module OpenSSL::X509
     end
 
     def usage_merge(list : Array(SuperCertificate::KeyUsage | SuperCertificate::ExtKeyUsage))
-      list.map do |value|
-        value.to_s.camelcase lower: true
-      end.join ", "
+      modified = list.map { |value| value.to_s.camelcase lower: true }
+      modified.join ", "
     end
 
     def create_ext_usage(list : Array(SuperCertificate::ExtKeyUsage))

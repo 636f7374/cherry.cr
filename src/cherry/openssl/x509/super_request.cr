@@ -7,16 +7,6 @@ module OpenSSL::X509
       yield new req
     end
 
-    def self.new(sync_free : Bool = false, &block : SuperRequest ->)
-      req = new
-
-      begin
-        yield req
-      ensure
-        req.free if sync_free
-      end
-    end
-
     def self.new
       generate
     end

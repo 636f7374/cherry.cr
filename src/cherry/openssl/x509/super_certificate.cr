@@ -275,13 +275,13 @@ module OpenSSL::X509
       valid_period
     end
 
-    def not_after=(valid_period : Int = 365_i64)
+    def not_after=(valid_period : Int = 365_i64) : Int
       asn1 = ASN1::Time.days_from_now valid_period
 
       {% if compare_versions(LibSSL::OPENSSL_VERSION, "1.0.2") >= 0_i32 %}
         ret = LibCrypto.x509_set1_notafter self, asn1
       {% else %}
-        ret = LibCrypto.x509_set1_notafter self, asn1
+        ret = LibCrypto.x509_set_notafter self, asn1
       {% end %}
 
       {% if compare_versions(LibSSL::OPENSSL_VERSION, "1.0.2") >= 0_i32 %}

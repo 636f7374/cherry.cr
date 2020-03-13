@@ -8,13 +8,15 @@ module OpenSSL::X509
       new LibCrypto.x509_name_new
     end
 
-    def self.parse(string : String)
-      new.tap do |name|
-        string.split('/').each do |entry|
-          oid, value = entry.split '='
-          name.add_entry oid, value
-        end
+    def self.parse(value : String)
+      name = new
+
+      value.split('/').each do |entry|
+        oid, value = entry.split '='
+        name.add_entry oid, value
       end
+
+      name
     end
 
     def self.free(name : LibCrypto::X509_NAME | SuperName)

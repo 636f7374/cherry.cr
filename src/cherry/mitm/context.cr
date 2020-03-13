@@ -48,7 +48,7 @@ module MITM
     end
 
     def create_server(request : HTTP::Request)
-      create_context request
+      create_server request
     end
 
     def create_all(request : HTTP::Request, verify_mode = OpenSSL::SSL::VerifyMode::NONE, &block : Context ->)
@@ -58,10 +58,10 @@ module MITM
       yield client, server
     end
 
-    def create_context(request : HTTP::Request)
+    def create_server(request : HTTP::Request)
       return unless host = request.host
 
-      create_context host
+      create_server host
     end
 
     def create_context_from_cache(value : Tuple(String, String))
@@ -79,7 +79,7 @@ module MITM
       server
     end
 
-    def create_context(hostname : String = self.hostName)
+    def create_server(hostname : String = self.hostName)
       _cache = cache.get hostname
       return create_context_from_cache _cache if _cache
 
