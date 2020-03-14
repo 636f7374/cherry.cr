@@ -16,18 +16,6 @@ module OpenSSL
       @pkey = LibCrypto.evp_pkey_new
     end
 
-    def self.free(pkey : LibCrypto::EVP_PKEY | PKey)
-      LibCrypto.evp_pkey_free pkey
-    end
-
-    def free(pkey : LibCrypto::EVP_PKEY | PKey)
-      PKey.free pkey
-    end
-
-    def free
-      free self
-    end
-
     def pkey=(pkey : LibCrypto::EVP_PKEY)
       @pkey = pkey
     end
@@ -67,6 +55,10 @@ module OpenSSL
 
     def modulus_size
       LibCrypto.evp_pkey_size self
+    end
+
+    def finalize
+      LibCrypto.evp_pkey_free @pkey
     end
 
     def to_unsafe

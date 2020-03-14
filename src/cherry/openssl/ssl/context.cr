@@ -5,7 +5,7 @@ abstract class OpenSSL::SSL::Context
     def ca_certificate_text=(certificate : String)
       certificate = OpenSSL::X509::SuperCertificate.parse certificate
 
-      self.ca_certificate_text = certificate ensure certificate.free
+      self.ca_certificate_text = certificate
     end
 
     # Set the CA certificate by string, in PEM format, used to
@@ -19,7 +19,7 @@ abstract class OpenSSL::SSL::Context
     def private_key_text=(private_key : String)
       parse = OpenSSL::PKey.parse_private_key private_key
 
-      self.private_key_text = parse ensure parse.free
+      self.private_key_text = parse
     end
 
     # Set the private key by string, The key must in PEM format.

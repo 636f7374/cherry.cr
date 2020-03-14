@@ -38,7 +38,7 @@ module MITM
     end
 
     def self.create_client(verify_mode = OpenSSL::SSL::VerifyMode::NONE)
-      client = OpenSSL::SSL::SuperContext::Client.new
+      client = OpenSSL::SSL::Context::Client.new
       client.verify_mode = verify_mode
       client
     end
@@ -48,7 +48,7 @@ module MITM
     end
 
     def create_server(request : HTTP::Request)
-      create_server request
+      create_context request
     end
 
     def create_all(request : HTTP::Request, verify_mode = OpenSSL::SSL::VerifyMode::NONE, &block : Context ->)
@@ -58,10 +58,10 @@ module MITM
       yield client, server
     end
 
-    def create_server(request : HTTP::Request)
+    def create_context(request : HTTP::Request)
       return unless host = request.host
 
-      create_server host
+      create_context host
     end
 
     def create_context_from_cache(value : Tuple(String, String))
@@ -70,16 +70,14 @@ module MITM
       _certificate = OpenSSL::X509::SuperCertificate.parse certificate
       _private_key = OpenSSL::PKey.parse_private_key private_key
 
-      server = OpenSSL::SSL::SuperContext::Server.new
+      server = OpenSSL::SSL::Context::Server.new
       server.ca_certificate_text = _certificate
       server.private_key_text = _private_key
-
-      _certificate.free ensure _private_key.free
 
       server
     end
 
-    def create_server(hostname : String = self.hostName)
+    def create_context(hostname : String = self.hostName)
       _cache = cache.get hostname
       return create_context_from_cache _cache if _cache
 
@@ -120,15 +118,12 @@ module MITM
       ]
 
       certificate.sign root_private_key
-      issuer_name.free ensure x509_name.free
-      root_certificate.free ensure root_private_key.free
 
-      server = OpenSSL::SSL::SuperContext::Server.new
+      server = OpenSSL::SSL::Context::Server.new
       server.ca_certificate_text = certificate
       server.private_key_text = rsa.pkey
 
       cache.set hostname, Tuple.new certificate.to_s, rsa.to_s OpenSSL::PKey::KeyType::PrivateKey
-      certificate.free ensure rsa.pkey_free
 
       server
     end

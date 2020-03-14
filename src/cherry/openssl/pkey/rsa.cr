@@ -14,30 +14,6 @@ module OpenSSL
       new LibCrypto.rsa_generate_key(size, exponent, nil, nil), KeyType::All
     end
 
-    def free
-      RSA.free self
-    end
-
-    def self.free(rsa : RSA | LibCrypto::RSA)
-      LibCrypto.rsa_free rsa
-    end
-
-    def pkey_free
-      RSA.pkey_free pkey
-    end
-
-    def self.free(pkey : PKey | LibCrypto::EVP_PKEY)
-      PKey.free pkey
-    end
-
-    def self.pkey_free(pkey : PKey | LibCrypto::EVP_PKEY)
-      PKey.free pkey
-    end
-
-    def pkey_free(pkey : PKey | LibCrypto::EVP_PKEY)
-      RSA.pkey_free pkey
-    end
-
     def self.parse_public_key(public_key : String, password = nil)
       bio = MemBIO.new
       bio.write public_key
@@ -111,6 +87,10 @@ module OpenSSL
       raise OpenSSL::Error.new "RSAPublicKey_dup" unless public_rsa
 
       new public_rsa, KeyType::PublicKey
+    end
+
+    def finalize
+      LibCrypto.evp_pkey_free @pkey
     end
 
     def to_unsafe

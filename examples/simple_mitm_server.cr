@@ -27,12 +27,7 @@ def handle_client(context, client : Orange::Socket)
 end
 
 def tls_free(socket : IO)
-  case socket
-  when Orange::Client
-    socket = socket.wrapped
-  end
-
-  socket.all_free if socket.responds_to? :all_free
+  socket.all_free if socket.is_a? OpenSSL::SSL::SuperSocket
 end
 
 # Durian

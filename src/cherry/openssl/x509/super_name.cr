@@ -19,18 +19,6 @@ module OpenSSL::X509
       name
     end
 
-    def self.free(name : LibCrypto::X509_NAME | SuperName)
-      LibCrypto.x509_name_free name
-    end
-
-    def free(name : LibCrypto::X509_NAME | SuperName)
-      SuperName.free name
-    end
-
-    def free
-      SuperName.free self
-    end
-
     def add_entry(oid : String, value : String)
       type = LibCrypto::MBSTRING_UTF8
       ret = LibCrypto.x509_name_add_entry_by_txt self, oid, type, value, value.bytesize, -1_i32, 0_i32
@@ -65,6 +53,10 @@ module OpenSSL::X509
 
         {oid, String.new(str, str_len)}
       end
+    end
+
+    def finalize
+      LibCrypto.x509_name_free self
     end
 
     def to_unsafe

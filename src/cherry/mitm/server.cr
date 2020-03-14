@@ -3,10 +3,9 @@ module MITM
     def self.upgrade(socket, request, context : MITM::Context)
       return socket unless server_context = context.create_server request
 
-      upgrade = OpenSSL::SSL::SuperSocket::Server.new io: socket,
-        context: server_context, sync_context_free: false rescue nil
+      upgrade = OpenSSL::SSL::Socket::Server.new io: socket,
+        context: server_context, sync_close: true rescue nil
 
-      server_context.free unless upgrade
       upgrade.sync = true if upgrade
 
       upgrade || socket

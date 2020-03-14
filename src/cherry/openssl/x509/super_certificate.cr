@@ -63,46 +63,6 @@ module OpenSSL::X509
       @pkey.not_nil!
     end
 
-    def self.free(cert : LibCrypto::X509 | SuperCertificate)
-      LibCrypto.x509_free cert
-    end
-
-    def free(cert : LibCrypto::X509 | SuperCertificate)
-      SuperCertificate.free cert
-    end
-
-    def free
-      SuperCertificate.free self
-    end
-
-    def self.pkey_free(pkey : OpenSSL::PKey | LibCrypto::EVP_PKEY)
-      OpenSSL::PKey.free pkey
-    end
-
-    def pkey_free(pkey : OpenSSL::PKey | LibCrypto::EVP_PKEY)
-      SuperCertificate.pkey_free pkey
-    end
-
-    def pkey_free
-      pkey.try { |_pkey| SuperCertificate.pkey_free _pkey }
-    end
-
-    def self.name_free(name : LibCrypto::X509_NAME)
-      LibCrypto.x509_name_free name
-    end
-
-    def name_free(name : LibCrypto::X509_NAME)
-      SuperCertificate.name_free name
-    end
-
-    def self.extension_free(extension : LibCrypto::X509_EXTENSION)
-      LibCrypto.x509_extension_free extension
-    end
-
-    def extension_free(extension : LibCrypto::X509_EXTENSION)
-      SuperCertificate.extension_free extension
-    end
-
     def serial
       ret = LibCrypto.x509_get_serialnumber self
       raise Error.new "X509_get_serialNumber" if ret == 0_i32
@@ -158,10 +118,10 @@ module OpenSSL::X509
     def extensions=(list : Array(LibCrypto::X509_EXTENSION))
       list.each do |item|
         unless 0_i32 == LibCrypto.x509_add_ext self, item, -1_i32
-          next extension_free item
+          next LibCrypto.x509_extension_free item
         end
 
-        extension_free item
+        LibCrypto.x509_extension_free item
         raise OpenSSL::Error.new "X509_add_ext"
       end
     end
@@ -202,7 +162,6 @@ module OpenSSL::X509
     def subject_name=(subject : String)
       name = SuperName.parse subject
       self.subject_name = name
-      name.free
 
       subject
     end
@@ -252,7 +211,6 @@ module OpenSSL::X509
       ret = LibCrypto.x509_set_serialnumber self, asn1
       raise Error.new "X509_set_serialNumber" if ret == 0_i32
 
-      asn1.free
       number
     end
 
@@ -271,11 +229,10 @@ module OpenSSL::X509
         raise Error.new "X509_set_notBefore" if ret == 0_i32
       {% end %}
 
-      asn1.free
       valid_period
     end
 
-    def not_after=(valid_period : Int = 365_i64) : Int
+    def not_after=(valid_period : Int = 365_i64)
       asn1 = ASN1::Time.days_from_now valid_period
 
       {% if compare_versions(LibSSL::OPENSSL_VERSION, "1.0.2") >= 0_i32 %}
@@ -290,12 +247,15 @@ module OpenSSL::X509
         raise Error.new "X509_set_notAfter" if ret == 0_i32
       {% end %}
 
-      asn1.free
       valid_period
     end
 
     def random_serial
       Random.rand Int32::MAX
+    end
+
+    def finalize
+      LibCrypto.x509_free self
     end
 
     def to_unsafe

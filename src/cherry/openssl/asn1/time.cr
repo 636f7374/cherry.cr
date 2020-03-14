@@ -11,16 +11,8 @@ module OpenSSL::ASN1
       new days * 60_i32 * 60_i32 * 24_i32
     end
 
-    def self.free(time : LibCrypto::ASN1_TIME | Time)
-      LibCrypto.asn1_time_free time
-    end
-
-    def free(time : LibCrypto::ASN1_TIME | Time)
-      Time.free time
-    end
-
-    def free
-      Time.free self
+    def finalize
+      LibCrypto.asn1_time_free self
     end
 
     def to_unsafe

@@ -46,38 +46,6 @@ module OpenSSL::X509
       @pkey.not_nil!
     end
 
-    def self.free(req : LibCrypto::X509_REQ)
-      LibCrypto.x509_req_free req
-    end
-
-    def free(req : LibCrypto::X509_REQ)
-      LibCrypto.x509_req_free req
-    end
-
-    def free
-      LibCrypto.x509_req_free self
-    end
-
-    def self.pkey_free(pkey : LibCrypto::EVP_PKEY)
-      OpenSSL::PKey.free pkey
-    end
-
-    def pkey_free(pkey : OpenSSL::PKey | LibCrypto::EVP_PKEY)
-      OpenSSL::PKey.free pkey
-    end
-
-    def pkey_free
-      pkey.try { |_pkey| OpenSSL::PKey.free _pkey }
-    end
-
-    def self.name_free(name : LibCrypto::X509_NAME)
-      LibCrypto.x509_name_free name
-    end
-
-    def name_free(name : LibCrypto::X509_NAME)
-      LibCrypto.x509_name_free name
-    end
-
     def sign(pkey : OpenSSL::PKey | LibCrypto::EVP_PKEY, algorithm = LibCrypto.evp_sha256)
       raise OpenSSL::Error.new "X509_REQ_sign" if 0_i32 == LibCrypto.x509_req_sign self, pkey, algorithm
     end
@@ -86,7 +54,6 @@ module OpenSSL::X509
       name = SuperName.parse subject
       self.subject_name = name
 
-      name.free
       subject
     end
 
@@ -125,6 +92,10 @@ module OpenSSL::X509
       io = IO::Memory.new
       to_io io
       String.new io.to_slice
+    end
+
+    def finalize
+      LibCrypto.x509_req_free self
     end
 
     def to_unsafe
