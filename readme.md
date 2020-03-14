@@ -27,6 +27,7 @@
 * I think if I was using [Rust](https://github.com/sfackler/rust-openssl) then I would n’t have encountered these problems.
   * But this allows me to learn a lot, I hope it can help more people.
 * That's it, Thanks for using, If you encounter any problems, please let me know.
+* After a period of testing, thread safety is now supported.
 
 ## Features
 
@@ -47,15 +48,11 @@
     * Essential when (create / read) Public / Private Key.
     * I encountered a memory leak problem here, it has been fixed.
   * SSL (Context, Server, SuperContext, SuperSocket)
-    * Context: Support loading certificate / private key files from memory (with garbage collection).
-    * Super\*: Slightly complicated but worth it, low memory usage.
-    * SuperContext: You need to manually free the memory allocation.
-    * SuperSocket: You need to manually free the memory allocation.
+    * Context: Support loading certificate / private key files from memory.
   * X509 (ExtensionFactory, Request, SuperCertificate, SuperName).
     * ExtensionFactory: Certificate Subject Add / Remove, very important.
     * Request: I don't seem to use it, but I also made.
-    * SuperCertificate: You need to manually free the memory allocation, Generate certificate requires it.
-    * SuperName: You need to manually free the memory allocation.
+    * SuperCertificate: Generate certificate requires it.
     * SuperName: `issuer_name`, `subject_name`, Generate certificate requires it.
 
 * MITM
@@ -63,24 +60,19 @@
   * Client: Wrapper for `SuperSocket::Client`.
   * Server: Wrapper for `SuperSocket::Server`.
   * Context: Convenient and fast certificate generation, for Man-in-the-middle.
-  * All of these, You need to manually free the memory allocation.
 
 * HTTP
   * Client
-    * If you use `SuperContext` as `Context`, it will use `SuperSocket`.
-    * All of these, You need to manually free the memory allocation.
+    * You might use `Durian.cr` as a DNS resolver, Available now.
 
 ## Tips
 
-* This project is currently in WIP (Work In Progress), it may have some undiscovered problems.
+* <del>This project is currently in WIP (Work In Progress), it may have some undiscovered problems.</del>
+* If you want to keep a low memory usage (manual memory management), You can use [64726f70 / cherry.cr](https://github.com/64726f70/cherry.cr) repository.
+  * **Don't use it unless you know how to use manual memory management.**
 * This repository contains OpenSSL and Network components.
   * Crystal network components are highly integrated with OpenSSL.
-* Why use `Super_*`?
-  * By using `Super_ *`, you can reduce memory usage, You don't want your application to take up too much memory.
-  * But you have to manage the memory manually, please free the memory allocation manually when you don't need it.
-  * If you free the same memory multiple times, your program will crash.
-  * When using `Fiber`, please use it with `Channel` (It will protect you from free the same memory multiple times).
-* `Travis-CI` appears to be malfunctioning and this repository cannot be detected.
+* <del>`Travis-CI` appears to be malfunctioning and this repository cannot be detected.</del>
 * <del>For a better future of the project, I decided to change the `MIT` license to the `GPLv3` license.</del>
 
 ## Next
@@ -121,7 +113,6 @@ def handle_client(context, client : Orange::Socket)
   # When using `Fiber`, please use it with `Channel` (It will protect you from free the same memory multiple times).
 
   client.close
-  tls_free client
 end
 
 def tls_free(socket : IO)
