@@ -12,8 +12,8 @@ module MITM
     property notAfter : Int64
     property hostName : String
 
-    def initialize(@rootCertificate, @rootPrivateKey)
-      @cache = Cache.new
+    def initialize(@rootCertificate, @rootPrivateKey, capacity : Int32? = 1024_i32)
+      @cache = Cache.new capacity || 1024_i32
       @country = "FI"
       @location = "Helsinki"
       @notBefore = -1_i64
