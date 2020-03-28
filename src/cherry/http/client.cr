@@ -34,6 +34,28 @@ class HTTP::Client
     @tcp_socket
   end
 
+  def set_wrapped(socket : IO)
+    return if @socket
+    @socket = socket
+
+    begin
+      hostname = @host.starts_with?('[') && @host.ends_with?(']') ? @host[1_i32..-2_i32] : @host
+
+      {% unless flag? :without_openssl %}
+        case _tls = tls_context
+        when OpenSSL::SSL::Context::Client
+          socket = OpenSSL::SSL::Socket::Client.new socket, context: _tls, sync_close: true, hostname: @host
+        end
+      {% end %}
+
+      @socket = socket
+    rescue ex
+      close
+
+      raise ex
+    end
+  end
+
   private def socket
     _socket = @socket
     return _socket if _socket
