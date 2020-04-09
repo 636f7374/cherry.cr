@@ -217,7 +217,8 @@ $ make test
 
 ## Credit
 
-* [\_Icon::wanicon/fruits](https://www.flaticon.com/packs/fruits-and-vegetables-48)
+* [\_Icon::Wanicon/Fruits](https://www.flaticon.com/packs/fruits-and-vegetables-48)
+* [\_Icon::Freepik/GraphicDesign](https://www.flaticon.com/packs/graphic-design-125)
 
 ## Contributors
 
