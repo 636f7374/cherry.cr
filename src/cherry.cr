@@ -1,3 +1,3 @@
 require "durian"
-require "papaya"
+require "wrench"
 require "./cherry/*"
