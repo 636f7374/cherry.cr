@@ -67,13 +67,8 @@
 
 ## Tips
 
-* <del>This project is currently in WIP (Work In Progress), it may have some undiscovered problems.</del>
-* If you want to keep a low memory usage (manual memory management), You can use [64726f70 / cherry.cr](https://github.com/64726f70/cherry.cr) repository.
-  * **Don't use it unless you know how to use manual memory management.**
 * This repository contains OpenSSL and Network components.
   * Crystal network components are highly integrated with OpenSSL.
-* <del>`Travis-CI` appears to be malfunctioning and this repository cannot be detected.</del>
-* <del>For a better future of the project, I decided to change the `MIT` license to the `GPLv3` license.</del>
 
 ## Next
 
