@@ -80,22 +80,22 @@
 
 ## Usage
 
-* Simple Mitm Server (Need to be used with [Orange.cr](https://github.com/636f7374/orange.cr))
+* Simple Mitm Server (Need to be used with [Carton.cr](https://github.com/636f7374/carton.cr))
 
 ```crystal
 require "base64"
-require "orange"
+require "carton"
 require "cherry"
 
 # This is a simple design, please do not use it directly.
 
-def handle_client(context, client : Orange::Socket)
+def handle_client(context, client : Carton::Socket)
   return client.close unless request = client.request_payload
 
   STDOUT.puts [client]
 
   case {client.tunnel_mode, client.traffic_type}
-  when {true, Orange::Traffic::HTTPS}
+  when {true, Carton::Traffic::HTTPS}
     client = MITM::Server.upgrade client, request, context
 
     buffer = uninitialized UInt8[4096_i32]
@@ -103,15 +103,7 @@ def handle_client(context, client : Orange::Socket)
     puts String.new buffer.to_slice[0_i32, length]
   end
 
-  # But you have to manage the memory manually, please free the memory allocation manually when you don't need it.
-  # If you free the same memory multiple times, your program will crash.
-  # When using `Fiber`, please use it with `Channel` (It will protect you from free the same memory multiple times).
-
   client.close
-end
-
-def tls_free(socket : IO)
-  socket.all_free if socket.is_a? OpenSSL::SSL::SuperSocket
 end
 
 # Durian
@@ -121,30 +113,31 @@ servers << Tuple.new Socket::IPAddress.new("1.1.1.1", 53_i32), Durian::Protocol:
 resolver = Durian::Resolver.new servers
 resolver.ip_cache = Durian::Resolver::Cache::IPAddress.new
 
-# Orange
+# Carton
 tcp_server = TCPServer.new "0.0.0.0", 1234_i32
-orange = Orange::Server.new tcp_server, resolver
-orange.authentication = Orange::Authentication::None
-orange.client_timeout = Orange::TimeOut.new
-orange.remote_timeout = Orange::TimeOut.new
+carton = Carton::Server.new tcp_server, resolver
+
+carton.authentication = Carton::Authentication::None
+carton.client_timeout = Carton::TimeOut.new
+carton.remote_timeout = Carton::TimeOut.new
 
 certificate = Base64.decode_string "Something..."
 private_key = Base64.decode_string "Something..."
 context = MITM::Context.new certificate, private_key
 
 # Authentication (Optional)
-# orange.authentication = Orange::Authentication::Basic
-# orange.on_auth = ->(user_name : String, password : String) do
+# carton.authentication = Carton::Authentication::Basic
+# carton.on_auth = ->(user_name : String, password : String) do
 #  STDOUT.puts [user_name, password]
-#  Orange::Verify::Pass
+#  Carton::Verify::Pass
 # end
 
 loop do
-  socket = orange.accept?
+  socket = carton.accept?
 
   spawn do
     next unless client = socket
-    next unless client = orange.process client
+    next unless client = carton.process client
 
     handle_client context, client
   end
