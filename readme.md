@@ -47,7 +47,7 @@
   * Pkey (PKey, DSA, RSA)
     * Essential when (create / read) Public / Private Key.
     * I encountered a memory leak problem here, it has been fixed.
-  * SSL (Context, Server, SuperContext, SuperSocket)
+  * SSL (Context)
     * Context: Support loading certificate / private key files from memory.
   * X509 (ExtensionFactory, Request, SuperCertificate, SuperName).
     * ExtensionFactory: Certificate Subject Add / Remove, very important.
@@ -57,24 +57,19 @@
 
 * MITM
   * Mitm Slightly complicated but worth it, low memory usage.
-  * Client: Wrapper for `SuperSocket::Client`.
-  * Server: Wrapper for `SuperSocket::Server`.
+  * Client: Wrapper for `OpenSSL::SSL::Socket::Client`.
+  * Server: Wrapper for `OpenSSL::SSL::Socket::Server`.
   * Context: Convenient and fast certificate generation, for Man-in-the-middle.
-
-* HTTP
-  * Client
-    * You might use `Durian.cr` as a DNS resolver, Available now.
 
 ## Tips
 
 * This repository contains OpenSSL and Network components.
-  * Crystal network components are highly integrated with OpenSSL.
+  * Crystal HTTP::Client components are highly integrated with OpenSSL.
 
 ## Next
 
 * [ ] More specification tests.
 * [ ] Troubleshooting Deep Memory Errors / Memory Leaks (More stress tests?)
-* [ ] Remove redundant / irrelevant code (SuperContext, SuperSocket).
 * [ ] ...
 
 
