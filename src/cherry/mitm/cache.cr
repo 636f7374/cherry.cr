@@ -1,34 +1,35 @@
-module MITM
-  class Cache
-    property collects : Immutable::Map(String, Tuple(String, String))
-    property capacity : Int32
+class MITM::Cache
+  property storage : Hash(String, Tuple(String, String))
+  property capacity : Int32
+  property mutex : Mutex
 
-    def initialize(@capacity : Int32 = 1024_i32)
-      @collects = Immutable::Map(String, Tuple(String, String)).new
-    end
+  def initialize(@capacity : Int32 = 1024_i32)
+    @storage = Hash(String, Tuple(String, String)).new
+    @mutex = Mutex.new :unchecked
+  end
 
-    def full?
-      capacity <= collects.size
-    end
+  def full?
+    capacity <= storage.size
+  end
 
-    def reset
-      @collects = Immutable::Map(String, Tuple(String, String)).new
-    end
+  def reset
+    self.storage.clear
+  end
 
-    def set!(name : String, value : Tuple(String, String))
-      reset if full?
+  private def set!(name : String, value : Tuple(String, String))
+    reset if full?
 
-      _collects = collects.set name, value
-      self.collects = _collects
-    end
+    self.storage[name] = value
+  end
 
-    def get(name : String)
-      collects[name]?
-    end
+  def get(name : String)
+    storage[name]?
+  end
 
-    def set(name : String, value : Tuple(String, String))
-      return if collects[name]?
+  def set(name : String, value : Tuple(String, String))
+    return if storage[name]?
 
+    @mutex.synchronize do
       set! name, value
     end
   end

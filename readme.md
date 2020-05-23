@@ -12,7 +12,7 @@
   <a href="https://github.com/636f7374/cherry.cr/releases">
     <img src="https://img.shields.io/github/release/636f7374/cherry.cr.svg" /></a>
   <a href="https://github.com/636f7374/cherry.cr/blob/master/license">
-  	<img src="https://img.shields.io/github/license/636f7374/cherry.cr.svg"></a>
+    <img src="https://img.shields.io/github/license/636f7374/cherry.cr.svg"></a>
 </p>
 
 ## Description
