@@ -72,7 +72,6 @@
 * [ ] Troubleshooting Deep Memory Errors / Memory Leaks (More stress tests?)
 * [ ] ...
 
-
 ## Usage
 
 * Simple Mitm Server (Need to be used with [Carton.cr](https://github.com/636f7374/carton.cr))
