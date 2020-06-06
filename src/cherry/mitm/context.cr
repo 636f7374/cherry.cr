@@ -11,17 +11,13 @@ class MITM::Context
   property notAfter : Int64
   property hostName : String
 
-  def initialize(@rootCertificate, @rootPrivateKey, capacity : Int32? = 1024_i32)
+  def initialize(@rootCertificate : String = String.new, @rootPrivateKey : String = String.new, capacity : Int32? = 1024_i32)
     @cache = Cache.new capacity || 1024_i32
     @country = "FI"
     @location = "Helsinki"
     @notBefore = -1_i64
     @notAfter = 365_i64
     @hostName = String.new
-  end
-
-  def self.new(&block : Context ->)
-    yield new
   end
 
   def self.from_path(rootCertificate : String, rootPrivateKey : String, &block : Context ->)
@@ -76,6 +72,43 @@ class MITM::Context
     server
   end
 
+  def create_root_context : Tuple(String, String)
+    rsa = OpenSSL::PKey::RSA.new 2048_i32
+    certificate = OpenSSL::X509::SuperCertificate.new
+
+    x509_name = OpenSSL::X509::SuperName.new
+    x509_name.add_entry "C", country
+    x509_name.add_entry "ST", " "
+    x509_name.add_entry "L", location
+    x509_name.add_entry "O", " "
+    x509_name.add_entry "OU", " "
+
+    certificate.version = 2_i32
+    certificate.serial = certificate.random_serial
+    certificate.not_before = notBefore
+    certificate.not_after = notAfter
+    certificate.public_key = rsa.pkey
+    certificate.subject_name = x509_name
+    certificate.issuer_name = x509_name
+
+    extension = OpenSSL::X509::ExtensionFactory.new certificate
+
+    certificate.extensions = [
+      extension.create(OpenSSL::NID::NID_basic_constraints, "CA:FALSE", true),
+      extension.create(OpenSSL::NID::NID_subject_key_identifier, "hash", false),
+      extension.create(OpenSSL::NID::NID_authority_key_identifier, "keyid,issuer"),
+      extension.create_subject_alt_name(hostname),
+      extension.create_ext_usage(ExtKeyUsage::ServerAuth),
+      extension.create_usage([
+        KeyUsage::NonRepudiation, KeyUsage::DigitalSignature,
+        KeyUsage::KeyEncipherment, KeyUsage::DataEncipherment,
+      ]),
+    ]
+
+    certificate.sign rsa.pkey
+    Tuple.new certificate.to_s, rsa.to_s OpenSSL::PKey::KeyType::PrivateKey
+  end
+
   def create_context(hostname : String = self.hostName)
     _cache = cache.get hostname
     return create_context_from_cache _cache if _cache
@@ -84,8 +117,8 @@ class MITM::Context
     root_private_key = OpenSSL::PKey.parse_private_key rootPrivateKey
     rsa = OpenSSL::PKey::RSA.new 2048_i32
     certificate = OpenSSL::X509::SuperCertificate.new
-
     issuer_name = root_certificate.subject_name
+
     x509_name = OpenSSL::X509::SuperName.new
     x509_name.add_entry "C", country
     x509_name.add_entry "ST", " "
@@ -93,6 +126,7 @@ class MITM::Context
     x509_name.add_entry "O", " "
     x509_name.add_entry "OU", " "
     x509_name.add_entry "CN", hostname
+
     certificate.version = 2_i32
     certificate.serial = certificate.random_serial
     certificate.not_before = notBefore
@@ -100,6 +134,7 @@ class MITM::Context
     certificate.public_key = rsa.pkey
     certificate.subject_name = x509_name
     certificate.issuer_name = issuer_name
+
     extension = OpenSSL::X509::ExtensionFactory.new root_certificate
 
     certificate.extensions = [
