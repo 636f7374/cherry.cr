@@ -97,7 +97,6 @@ class MITM::Context
       extension.create(OpenSSL::NID::NID_basic_constraints, "CA:FALSE", true),
       extension.create(OpenSSL::NID::NID_subject_key_identifier, "hash", false),
       extension.create(OpenSSL::NID::NID_authority_key_identifier, "keyid,issuer"),
-      extension.create_subject_alt_name(hostname),
       extension.create_ext_usage(ExtKeyUsage::ServerAuth),
       extension.create_usage([
         KeyUsage::NonRepudiation, KeyUsage::DigitalSignature,
