@@ -14,10 +14,8 @@ class OpenSSL::MemBIO < IO
     write data.to_slice
   end
 
-  def write(data : Bytes) : Int64
+  def write(data : Bytes)
     LibCrypto.bio_write self, data, data.size
-
-    data.size.to_i64
   end
 
   def reset
@@ -34,6 +32,7 @@ class OpenSSL::MemBIO < IO
   def to_s
     io = IO::Memory.new
     to_io io
+
     String.new io.to_slice
   end
 
