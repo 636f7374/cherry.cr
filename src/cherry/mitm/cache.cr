@@ -9,27 +9,27 @@ class MITM::Cache
   end
 
   def full?
-    capacity <= storage.size
+    @mutex.synchronize { capacity <= self.storage.size }
   end
 
-  def reset
-    self.storage.clear
+  def clear
+    @mutex.synchronize { self.storage.clear }
   end
 
   private def set!(name : String, value : Tuple(String, String))
-    reset if full?
+    clear if full?
 
-    self.storage[name] = value
+    @mutex.synchronize { self.storage[name] = value }
   end
 
   def get(name : String)
-    storage[name]?
+    @mutex.synchronize { storage[name]? }
   end
 
   def set(name : String, value : Tuple(String, String))
-    return if storage[name]?
-
     @mutex.synchronize do
+      return if storage[name]?
+
       set! name, value
     end
   end
