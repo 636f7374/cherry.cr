@@ -1,5 +1,5 @@
 class OpenSSL::MemBIO < IO
-  def initialize(@bio : LibCrypto::BIO)
+  def initialize(@bio : LibCrypto::Bio*)
   end
 
   def self.new
@@ -14,7 +14,7 @@ class OpenSSL::MemBIO < IO
     write data.to_slice
   end
 
-  def write(data : Bytes)
+  def write(data : Bytes) : Nil
     LibCrypto.bio_write self, data, data.size
   end
 
