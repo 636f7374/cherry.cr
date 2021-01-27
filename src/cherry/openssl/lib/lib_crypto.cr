@@ -1,5 +1,6 @@
 lib LibCrypto
-  type PasswordCallback = Proc(LibC::Char*, LibC::Int, LibC::Int, Void*, LibC::Int)
+  alias PasswordCallback = Proc(LibC::Char*, LibC::Int, LibC::Int, Void*, LibC::Int)
+
   type EVP_PKEY = Void*
   type RSA = Void*
   type DSA = Void*
@@ -122,17 +123,17 @@ lib LibCrypto
   fun dsapublickey_dup = DSAPublicKey_dup(rsa : DSA) : DSA
   fun dsaprivateKey_dup = DSAPrivateKey_dup(rsa : DSA) : DSA
 
-  fun pem_read_bio_rsaprivatekey = PEM_read_bio_RSAPrivateKey(bp : Bio*, x : RSA, cb : Void*, u : Void*) : RSA
-  fun pem_read_bio_dsaprivatekey = PEM_read_bio_DSAPrivateKey(bp : Bio*, x : DSA, cb : Void*, u : Void*) : DSA
-  fun pem_read_bio_pubkey = PEM_read_bio_PUBKEY(bp : Bio*, x : EVP_PKEY, cb : Void*, u : Void*) : EVP_PKEY
-  fun pem_read_bio_privatekey = PEM_read_bio_PrivateKey(bp : Bio*, x : EVP_PKEY, cb : Void*, u : Void*) : EVP_PKEY
-  fun pem_read_bio_x509 = PEM_read_bio_X509(bp : Bio*, x : X509, cb : Void*, u : Void*) : X509
-  fun pem_read_bio_x509_req = PEM_read_bio_X509_REQ(bp : Bio*, x : X509_REQ, cb : Void*, u : Void*) : X509_REQ
+  fun pem_read_bio_rsaprivatekey = PEM_read_bio_RSAPrivateKey(bp : Bio*, x : RSA, cb : PasswordCallback, u : Void*) : RSA
+  fun pem_read_bio_dsaprivatekey = PEM_read_bio_DSAPrivateKey(bp : Bio*, x : DSA, cb : PasswordCallback, u : Void*) : DSA
+  fun pem_read_bio_pubkey = PEM_read_bio_PUBKEY(bp : Bio*, x : EVP_PKEY, cb : PasswordCallback, u : Void*) : EVP_PKEY
+  fun pem_read_bio_privatekey = PEM_read_bio_PrivateKey(bp : Bio*, x : EVP_PKEY, cb : PasswordCallback, u : Void*) : EVP_PKEY
+  fun pem_read_bio_x509 = PEM_read_bio_X509(bp : Bio*, x : X509, cb : PasswordCallback, u : Void*) : X509
+  fun pem_read_bio_x509_req = PEM_read_bio_X509_REQ(bp : Bio*, x : X509_REQ, cb : PasswordCallback, u : Void*) : X509_REQ
   fun pem_write_bio_x509 = PEM_write_bio_X509(bp : Bio*, x : X509) : LibC::Int
   fun pem_write_bio_x509_req = PEM_write_bio_X509_REQ(bp : Bio*, x : X509_REQ) : X509_REQ
   fun pem_write_bio_rsa_pubkey = PEM_write_bio_RSA_PUBKEY(bp : Bio*, x : RSA) : LibC::Int
-  fun pem_write_bio_rsaprivatekey = PEM_write_bio_RSAPrivateKey(bp : Bio*, x : RSA, enc : EVP_CIPHER, kstr : LibC::UChar*, klen : LibC::Int, cb : Void*, u : Void*) : LibC::Int
-  fun pem_write_bio_dsaprivatekey = PEM_write_bio_DSAPrivateKey(bp : Bio*, x : DSA, enc : EVP_CIPHER, kstr : LibC::UChar*, klen : LibC::Int, cb : Void*, u : Void*) : LibC::Int
+  fun pem_write_bio_rsaprivatekey = PEM_write_bio_RSAPrivateKey(bp : Bio*, x : RSA, enc : EVP_CIPHER, kstr : LibC::UChar*, klen : LibC::Int, cb : PasswordCallback, u : Void*) : LibC::Int
+  fun pem_write_bio_dsaprivatekey = PEM_write_bio_DSAPrivateKey(bp : Bio*, x : DSA, enc : EVP_CIPHER, kstr : LibC::UChar*, klen : LibC::Int, cb : PasswordCallback, u : Void*) : LibC::Int
   fun pem_write_bio_dsa_pubkey = PEM_write_bio_DSA_PUBKEY(bp : Bio*, x : DSA) : LibC::Int
 
   fun asn1_time_free = ASN1_TIME_free(a : ASN1_TIME) : Void*
